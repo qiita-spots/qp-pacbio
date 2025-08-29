@@ -39,7 +39,7 @@ jobs:
         uses: conda-incubator/setup-miniconda@v2
         with:
           auto-update-conda: true
-          python-version: 3.11
+          python-version: 3.10
 
       - name: Basic dependencies install
         env:
@@ -80,7 +80,7 @@ jobs:
           # seqtk is a conda-installed requirement for metapool and isn't
           # installed automatically by its setup.py.
           conda config --add channels bioconda
-          conda create -q --yes -n qp_pacbio_2025.9 python=3.11
+          conda create -q --yes -n qp_pacbio_2025.9 python=3.10
 
           conda activate qp_pacbio_2025.9
 
