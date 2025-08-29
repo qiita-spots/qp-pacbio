@@ -11,6 +11,8 @@ packages = [
     { include = "src/sequence_processing_pipeline", from = "./", to = "sequence_processing_pipeline" },
 ]
 
+[tool.setuptools_scm]
+
 [project]
 name = "qp_pacbio"
 # version strings must comply with PEP 440:
