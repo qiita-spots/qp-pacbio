@@ -4,8 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 packages = ["qp_pacbio"]
-
-[tool.setuptools_scm]
+include-package-data = true
 
 [project]
 name = "qp_pacbio"
@@ -43,6 +42,7 @@ dependencies = [
     "qiita-files@https://github.com/qiita-spots/qiita-files/archive/master.zip",
     "qiita_client@https://github.com/qiita-spots/qiita_client/archive/master.zip",
 ]
+
 [project.scripts]
-configure_qp_pacbio = "qp_pacbio.scripts.configure_qp_pacbio:config"
-start_qp_pacbio = "qp_pacbio.scripts.start_qp_pacbio:execute"
+configure_qp_pacbio = "qp_pacbio.scripts:config"
+start_qp_pacbio = "qp_pacbio.scripts:execute"

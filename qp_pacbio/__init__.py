@@ -6,7 +6,7 @@
 # The full license is in the file LICENSE, distributed with this software.
 # -----------------------------------------------------------------------------
 from qiita_client import QiitaPlugin, QiitaCommand
-from qp_pacbio import pacbio_processing
+from .qp_pacbio import pacbio_processing
 
 __version__ = '2025.9'
 
