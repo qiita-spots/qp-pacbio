@@ -31,12 +31,10 @@ classifiers = [
     "Operating System :: MacOS :: MacOS X",
 ]
 dependencies = [
-    "nose>=0.10.1",
     "click>=3.3",
     "pandas",
     'requests',
     'flake8',
-    'nose',
     'coverage',
     'numpy',
     "qiita-files@https://github.com/qiita-spots/qiita-files/archive/master.zip",

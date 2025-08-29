@@ -64,7 +64,7 @@ jobs:
           conda config --add channels conda-forge
           conda create -q --yes -n qiita python=3.9 libgfortran numpy nginx cython redis
           conda activate qiita
-          pip install sphinx sphinx-bootstrap-theme nose-timer Click
+          pip install sphinx sphinx-bootstrap-theme pytest-cov Click
 
       - name: Qiita install
         shell: bash -l {0}
@@ -139,7 +139,7 @@ jobs:
           export QIITA_CONFIG_FP=`pwd`/qiita-dev/qiita_core/support_files/config_test_local.cfg
           export PYTHONWARNINGS="ignore:Certificate for localhost has no \`subjectAltName\`"
 
-          nosetests --with-doctest --with-coverage -v --cover-package qp_pacbio
+          pytest --doctest-modules --cov=qp_pacbio --cov-report=lcov
 
       - uses: codecov/codecov-action@v3
         with:
