@@ -2,14 +2,8 @@
 requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
-[tool.hatch.build.targets.wheel]
-packages = ["qp_klp", "sequence_processing_pipeline"]
-
-[tool.poetry]
-packages = [
-    { include = "src/qp_klp", from = "./", to = "qp_klp" },
-    { include = "src/sequence_processing_pipeline", from = "./", to = "sequence_processing_pipeline" },
-]
+[tool.setuptools]
+packages = ["qp_pacbio"]
 
 [tool.setuptools_scm]
 
@@ -28,7 +22,6 @@ keywords = ["bioinformatics", "qiita", "pacbio"]
 license = "BSD-3-Clause"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
-    "License :: OSI Approved :: BSD License",
     "Topic :: Scientific/Engineering :: Bio-Informatics",
     "Topic :: Software Development :: Libraries :: Application Frameworks",
     "Topic :: Software Development :: Libraries :: Python Modules",

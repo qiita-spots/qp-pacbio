@@ -84,13 +84,10 @@ jobs:
 
           conda activate qp_pacbio_2025.9
 
-          # creating bcl-convert/sbatch/squeue executable
-          echo `pwd`/tests/bin/ >> "$GITHUB_PATH"
-
           export QIITA_ROOTCA_CERT=`pwd`/qiita-dev/qiita_core/support_files/ci_rootca.crt
           export QIITA_CONFIG_FP=`pwd`/qiita-dev/qiita_core/support_files/config_test_local.cfg
-          pip --quiet install -U pip
 
+          pip --quiet install -U pip
           pip --quiet install https://github.com/qiita-spots/qtp-job-output-folder/archive/refs/heads/main.zip
 
           pip install -e .
