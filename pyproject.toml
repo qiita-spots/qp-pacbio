@@ -44,5 +44,5 @@ dependencies = [
     "qiita_client@https://github.com/qiita-spots/qiita_client/archive/master.zip",
 ]
 [project.scripts]
-configure_klp = "qp_pacbio.scripts.configure_qp_pacbio:config"
-start_klp = "qp_pacbio.scripts.start_qp_pacbio:execute"
+configure_qp_pacbio = "qp_pacbio.scripts.configure_qp_pacbio:config"
+start_qp_pacbio = "qp_pacbio.scripts.start_qp_pacbio:execute"
