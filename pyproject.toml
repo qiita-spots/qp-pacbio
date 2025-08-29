@@ -23,9 +23,9 @@ description = "Qiita Plugin: PacBio Processing"
 readme = "README.rst"
 # ">=" required as most available versions of 3.9 will be "3.9.17" or
 # similar.
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 keywords = ["bioinformatics", "qiita", "pacbio"]
-license = { text = "BSD" }
+license = "BSD"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "License :: OSI Approved :: BSD License",
