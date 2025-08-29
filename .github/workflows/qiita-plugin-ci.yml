@@ -71,9 +71,6 @@ jobs:
         run: |
           conda activate qiita
 
-          # "copying" sql file to allow testing via Qiita
-          cp tests/qiita-sql/91.sql qiita-dev/qiita_db/support_files/patches/test_db_sql/
-
           pip install qiita-dev/ --no-binary redbiom
           mkdir ~/.qiita_plugins
 
