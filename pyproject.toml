@@ -25,7 +25,7 @@ readme = "README.rst"
 # similar.
 requires-python = ">=3.11"
 keywords = ["bioinformatics", "qiita", "pacbio"]
-license = "BSD"
+license = "BSD-3-Clause"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "License :: OSI Approved :: BSD License",
