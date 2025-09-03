@@ -18,7 +18,6 @@ jobs:
           POSTGRES_DB: postgres
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          COVER_PACKAGE: ${{ matrix.cover_package }}
 
         # Set health checks to wait until postgres has started
         options: >-
@@ -42,11 +41,9 @@ jobs:
           python-version: "3.11"
 
       - name: Basic dependencies install
-        env:
-          COVER_PACKAGE: ${{ matrix.cover_package }}
         shell: bash -l {0}
         run: |
-          echo "Testing: " $COVER_PACKAGE
+          echo "Testing: "
 
           # we need to download qiita directly so we have "easy" access to
           # all config files
@@ -77,8 +74,6 @@ jobs:
       - name: Install Qiita plugins
         shell: bash -l {0}
         run: |
-          # seqtk is a conda-installed requirement for metapool and isn't
-          # installed automatically by its setup.py.
           conda config --add channels bioconda
           conda create -q --yes -n qp_pacbio_2025.9 python=3.11
 
@@ -131,8 +126,6 @@ jobs:
 
       - name: qp-pacbio
         shell: bash -l {0}
-        env:
-          COVER_PACKAGE: ${{ matrix.cover_package }}
         run: |
           conda activate qp_pacbio_2025.9
           export QIITA_ROOTCA_CERT=`pwd`/qiita-dev/qiita_core/support_files/ci_rootca.crt
