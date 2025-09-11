@@ -101,8 +101,7 @@ class PacBioTests(PluginTestCase):
         # testing file creation, just number of lines and header
         with open(f'{out_dir}/sample_list.txt', 'r') as f:
             obs_lines = f.readlines()
-        self.assertEqual(3, len(obs_lines))
-        self.assertEqual(obs_lines[0], 'sample_name\tfilename\n')
+        self.assertEqual(2, len(obs_lines))
 
         # testing step-1
         with open(f'{out_dir}/step-1/step-1.slurm', 'r') as f:

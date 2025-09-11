@@ -105,7 +105,7 @@ def generate_sample_list(qclient, artifact_id, out_dir):
     files, prep = qclient.artifact_and_preparation_files(artifact_id)
 
     lookup = prep.set_index('run_prefix')['sample_name'].to_dict()
-    lines = ['sample_name\tfilename']
+    lines = []
     for _, (fwd, _) in files.items():
         fwd = fwd['filepath']
         sname = search_by_filename(basename(fwd), lookup)
