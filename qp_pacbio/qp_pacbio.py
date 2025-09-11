@@ -113,9 +113,8 @@ def generate_sample_list(qclient, artifact_id, out_dir):
 
     with open(f'{out_dir}/sample_list.txt', 'w') as f:
         f.write('\n'.join(lines))
-    njobs = len(lines) - 1
 
-    return njobs
+    return len(lines)
 
 
 def pacbio_processing(qclient, job_id, parameters, out_dir):
