@@ -8,9 +8,9 @@
 #SBATCH -e {{output}}/step-1/logs/%x-%A.err
 #SBATCH --array {{array_params}}
 
-conda activate {{conda-environment}}
+conda activate {{conda_environment}}
 
-cd {{output}}
+cd {{output}}/step-1
 step=${SLURM_ARRAY_TASK_ID}
 input=$(head -n $step {{output}}/file_list.txt | tail -n 1)
 fn=`basename ${input}`

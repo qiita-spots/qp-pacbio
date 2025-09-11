@@ -78,7 +78,8 @@ jobs:
           conda create -q --yes -n qp_pacbio_2025.9 python=3.11 mamba
 
           conda activate qp_pacbio_2025.9
-          mamba install hifiasm_meta minimap2 metawrap das_tool checkm-genome galah fastani seqkit
+          # this actually takes a long time, thus not running as is not necessary right now for testing
+          # mamba install --yes hifiasm_meta minimap2 metawrap das_tool checkm-genome galah fastani seqkit
 
           export QIITA_ROOTCA_CERT=`pwd`/qiita-dev/qiita_core/support_files/ci_rootca.crt
           export QIITA_CONFIG_FP=`pwd`/qiita-dev/qiita_core/support_files/config_test_local.cfg
