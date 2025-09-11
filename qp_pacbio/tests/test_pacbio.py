@@ -33,7 +33,7 @@ class WoltkaTests(PluginTestCase):
                     remove(fp)
 
     def test_pacbio_processing(self):
-        params = {'artifact-id': 5}
+        params = {'artifact_id': 5}
         job_id = 'my-job-id'
         out_dir = mkdtemp()
         self._clean_up_files.append(out_dir)
