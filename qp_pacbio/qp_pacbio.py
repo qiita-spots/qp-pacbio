@@ -152,6 +152,8 @@ def pacbio_processing(qclient, job_id, parameters, out_dir):
     njobs = generate_sample_list(qclient, artifact_id, out_dir)
     generate_templates(out_dir, job_id, njobs)
 
+    # TODO 2. submit jobs
+
     qclient.update_job_step(
             job_id, "Step 3 of 3: Running commands")
 
