@@ -41,6 +41,13 @@ class WoltkaTests(PluginTestCase):
         # this should fail cause we don't have valid data
         success, ainfo, msg = pacbio_processing(
             self.qclient, job_id, params, out_dir)
+
+        with open(f'{out_dir}/sample_list.txt', 'r') as f:
+            obs_lines = f.readlines()
+        self.assertCountEqual([], obs_lines)
+
+        # TODO 1. adding tests for template processing
+
         self.assertTrue(success)
         exp = [ArtifactInfo('output', 'job-output-folder',
                [(f'{out_dir}/results/', 'directory')])]
