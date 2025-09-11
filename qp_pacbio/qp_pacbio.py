@@ -6,8 +6,7 @@
 # The full license is in the file LICENSE, distributed with this software.
 # -----------------------------------------------------------------------------
 from qiita_client import ArtifactInfo
-from jinja2 import Environment
-from jinja2 import BaseLoader, TemplateNotFound
+from jinja2 import Environment, BaseLoader, TemplateNotFound
 from os.path import basename, join, exists, getmtime
 from os import makedirs
 import pathlib
@@ -40,9 +39,6 @@ def search_by_filename(fname, lookup):
 # taken from https://jinja.palletsprojects.com/en/3.0.x/api/#jinja2.BaseLoader
 class KISSLoader(BaseLoader):
     def __init__(self, path):
-        # pin the path for loader to the location sequence_processing_pipeline
-        # (the location of this file), along w/the relative path to the
-        # templates directory.
         self.path = join(pathlib.Path(__file__).parent.resolve(), path)
 
     def get_source(self, environment, template):
@@ -148,7 +144,6 @@ def pacbio_processing(qclient, job_id, parameters, out_dir):
     qclient.update_job_step(
             job_id, "Step 2 of 3: Creating submission templates")
 
-    njobs = generate_sample_list(qclient, artifact_id, out_dir)
     generate_templates(out_dir, job_id, njobs)
 
     # TODO 2. submit jobs
