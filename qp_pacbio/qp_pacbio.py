@@ -52,7 +52,8 @@ class KISSLoader(BaseLoader):
 
 
 def generate_templates(out_dir, job_id, njobs):
-    """Generates the templates
+    """Generates the templates to create slurm submission jobs for
+    pacbio processing steps.
 
     Parameters
     ----------
@@ -82,7 +83,8 @@ def generate_templates(out_dir, job_id, njobs):
 
 
 def generate_sample_list(qclient, artifact_id, out_dir):
-    """Generates the sample_list.txt file
+    """Generates the sample_list.txt file of sample names/files to be
+    processed with slurm templates.
 
     Parameters
     ----------
