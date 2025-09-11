@@ -55,8 +55,8 @@ def pacbio_processing(qclient, job_id, parameters, out_dir):
     results_fp = f'{out_dir}/results'
     makedirs(results_fp)
 
-    job_info = qclient.get_job_info(job_id)
-    parameters = job_info['parameters']
+    qclient.update_job_step(
+            job_id, "Step 1 of 3: Collecting info and generating submission")
     artifact_id = parameters['artifact_id']
     files, prep = qclient.artifact_and_preparation_files(artifact_id)
     lookup = prep.set_index('run_prefix')['sample_name'].to_dict()
@@ -68,9 +68,17 @@ def pacbio_processing(qclient, job_id, parameters, out_dir):
     with open(f'{out_dir}/sample_list.txt') as f:
         f.write('\n'.append(lines))
 
+    qclient.update_job_step(
+            job_id, "Step 2 of 3: Creating submission templates")
     # TODO 1. add code to create templates
     # TODO 2. submit templates
+
+    qclient.update_job_step(
+            job_id, "Step 3 of 3: Running commands")
     # TODO 3. wait for all jobs to finish
+
+    qclient.update_job_step(
+            job_id, "Commands finished")
 
     paths = [(f'{results_fp}/', 'directory')]
     return (True, [ArtifactInfo('output', 'job-output-folder', paths)],
