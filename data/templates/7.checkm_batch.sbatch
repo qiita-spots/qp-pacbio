@@ -11,9 +11,13 @@ conda activate {{conda_environment}}
 
 cd {{output}}
 
-cd 03B.DASTool_refinement/${name}/${name}_DASTool_bins
+step=${SLURM_ARRAY_TASK_ID}
+input=$(head -n $step {{output}}/sample_list.txt | tail -n 1)
+fn=`basename ${input}`
+
+cd 03B.DASTool_refinement/${fn}/${fn}_DASTool_bins
 mkdir ../renamed
-cp bc*.fa ../renamed/
+cp *.fa ../renamed/
 cd ../renamed
 rm -rf checkm_out
 checkm lineage_wf ./ ./checkm_out -x fa -t 8 --tab_table -f ../${name}_checkm_table.txt --pplacer_threads 1

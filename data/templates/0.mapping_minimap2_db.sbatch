@@ -13,7 +13,7 @@ conda activate {{conda_environment}}
 
 cd {{output}}/step-0
 step=${SLURM_ARRAY_TASK_ID} ##1000_2, 1000_1
-input=$(head -n $step {{output}}/file_list.txt | tail -n 1)
+input=$(head -n $step {{output}}/sample_list.txt | tail -n 1)
 fn=`basename ${input}`
 
 minimap2 -x map-hifi -t {{nprocs}} -a --secondary=no --MD --eqx -o {{output}}/step-0/${fn}.sam /projects/wol/qiyun/wol2/databases/minimap2/WoLr2.mmi ${input}
