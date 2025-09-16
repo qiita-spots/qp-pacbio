@@ -66,9 +66,28 @@ def generate_templates(out_dir, job_id, njobs):
     """
 
     jinja_env = Environment(loader=KISSLoader('../data/templates'))
+
+    template0 = jinja_env.get_template("0.mapping_minimap2_db.sbatch")
+    cdir0 = f'{out_dir}/step-0'
+    makedirs(cdir0)
+    makedirs(f'{cdir0}/logs', exist_ok=True)
+    with open(f'{cdir0}/step-0.slurm', mode="w", encoding="utf-8") as f:
+        f.write(template0.render(
+            conda_environment='qp_pacbio_2025.9',
+            output=f'{out_dir}',
+            job_name=f's0-{job_id}',
+            node_count=1,
+            nprocs=16,
+            wall_time_limit=1000,
+            mem_in_gb=300,
+            array_params=f'1:{njobs}%16'
+        ))
+
+
     template = jinja_env.get_template("1.hifiasm-meta_new.sbatch")
     cdir = f'{out_dir}/step-1'
     makedirs(cdir)
+    makedirs(f'{cdir}/logs', exist_ok=True)
     with open(f'{cdir}/step-1.slurm', mode="w", encoding="utf-8") as f:
         f.write(template.render(
             conda_environment='qp_pacbio_2025.9',
@@ -77,6 +96,22 @@ def generate_templates(out_dir, job_id, njobs):
             node_count=1,
             nprocs=16,
             wall_time_limit=1000,
+            mem_in_gb=300,
+            array_params=f'1:{njobs}%16'
+        ))
+
+    template2 = jinja_env.get_template("2.hifiasm-meta_new.sbatch")
+    cdir2 = f'{out_dir}/step-2'
+    makedirs(cdir2)
+    makedirs(f'{cdir2}/logs', exist_ok=True)
+    with open(f'{cdir2}/step-2.slurm', mode="w", encoding="utf-8") as f:
+        f.write(template2.render(
+            conda_environment='qp_pacbio_2025.9',
+            output=f'{out_dir}',
+            job_name=f's2-{job_id}',
+            node_count=1,
+            nprocs=1,
+            wall_time_limit=500,
             mem_in_gb=16,
             array_params=f'1:{njobs}%16'
         ))
@@ -143,12 +178,46 @@ def pacbio_processing(qclient, job_id, parameters, out_dir):
 
     njobs = generate_sample_list(qclient, artifact_id, out_dir)
 
+    with open(f'{out_dir}/sample_list.txt') as src, open(f'{out_dir}/file_list.txt', 'w') as dst:
+    for ln in src:
+        ln = ln.strip()
+        if not ln:
+            continue
+        parts = ln.split('\t', 1)
+        dst.write((parts[1] if len(parts) == 2 else parts[0]) + '\n')
+
     qclient.update_job_step(
             job_id, "Step 2 of 3: Creating submission templates")
 
     generate_templates(out_dir, job_id, njobs)
 
-    # TODO 2. submit jobs
+    # Submit Step 0 (independent)
+    jid0 = qclient.submit_job(f'{out_dir}/step-0/step-0.slurm')
+
+    # Submit Step 1 (independent) and capture its Slurm jobid
+    jid1 = qclient.submit_job(f'{out_dir}/step-1/step-1.slurm')
+
+    # Re-render Step 2 with dependency on the corresponding task of Step 1
+    # (Overwrites step-2/step-2.slurm to inject --dependency)
+    jinja_env = Environment(loader=KISSLoader('../data/templates'))
+    template2 = jinja_env.get_template("2.hifiasm-meta_new.sbatch")
+    cdir2 = f'{out_dir}/step-2'
+    makedirs(cdir2, exist_ok=True)
+    with open(f'{cdir2}/step-2.slurm', mode="w", encoding="utf-8") as f:
+        f.write(template2.render(
+            conda_environment='qp_pacbio_2025.9',
+            output=f'{out_dir}',
+            job_name=f's2-{job_id}',
+            node_count=1,
+            nprocs=1,
+            wall_time_limit=500,
+            mem_in_gb=16,
+            array_params=f'1:{njobs}%16',
+            dependency=(f'aftercorr:{jid1}' if jid1 else None)
+        ))
+
+    # Submit Step 2 (now chained to Step 1 with aftercorr)
+    jid2 = qclient.submit_job(f'{out_dir}/step-2/step-2.slurm')
 
     qclient.update_job_step(
             job_id, "Step 3 of 3: Running commands")

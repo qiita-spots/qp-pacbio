@@ -7,7 +7,7 @@
 #SBATCH -o {{output}}/step-3/logs/%x-%A.out
 #SBATCH -e {{output}}/step-3/logs/%x-%A.err
 
-conda activate {{conda-environment}}
+conda activate {{conda_environment}}
 cd {{output}}
 
 step=${SLURM_ARRAY_TASK_ID}

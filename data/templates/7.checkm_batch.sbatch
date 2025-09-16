@@ -7,7 +7,8 @@
 #SBATCH -o {{output}}/step-7/logs/%x-%A.out
 #SBATCH -e {{output}}/step-7/logs/%x-%A.err
 
-conda activate {{conda-environment}}
+conda activate {{conda_environment}}
+
 cd {{output}}
 
 cd 03B.DASTool_refinement/${name}/${name}_DASTool_bins
