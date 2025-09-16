@@ -178,13 +178,15 @@ def pacbio_processing(qclient, job_id, parameters, out_dir):
 
     njobs = generate_sample_list(qclient, artifact_id, out_dir)
 
-    with open(f'{out_dir}/sample_list.txt') as src, open(f'{out_dir}/file_list.txt', 'w') as dst:
-    for ln in src:
-        ln = ln.strip()
-        if not ln:
-            continue
-        parts = ln.split('\t', 1)
-        dst.write((parts[1] if len(parts) == 2 else parts[0]) + '\n')
+    # Derive file_list.txt (paths only) from sample_list.txt
+    with open(f'{out_dir}/sample_list.txt', 'r') as src, \
+         open(f'{out_dir}/file_list.txt', 'w') as dst:
+        for ln in src:
+            ln = ln.strip()
+            if not ln:
+                continue
+            parts = ln.split('\t', 1)   # "sample_name<TAB>filepath"
+            dst.write((parts[1] if len(parts) == 2 else parts[0]) + '\n')
 
     qclient.update_job_step(
             job_id, "Step 2 of 3: Creating submission templates")
