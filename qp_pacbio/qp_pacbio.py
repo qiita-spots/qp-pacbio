@@ -100,7 +100,7 @@ def generate_templates(out_dir, job_id, njobs):
             array_params=f'1:{njobs}%16'
         ))
 
-    template2 = jinja_env.get_template("2.hifiasm-meta_new.sbatch")
+    template2 = jinja_env.get_template("2.get-circular-genomes.sbatch")
     cdir2 = f'{out_dir}/step-2'
     makedirs(cdir2)
     makedirs(f'{cdir2}/logs', exist_ok=True)
@@ -200,7 +200,7 @@ def pacbio_processing(qclient, job_id, parameters, out_dir):
     # Re-render Step 2 with dependency on the corresponding task of Step 1
     # (Overwrites step-2/step-2.slurm to inject --dependency)
     jinja_env = Environment(loader=KISSLoader('../data/templates'))
-    template2 = jinja_env.get_template("2.hifiasm-meta_new.sbatch")
+    template2 = jinja_env.get_template("2.get-circular-genomes.sbatch")
     cdir2 = f'{out_dir}/step-2'
     makedirs(cdir2, exist_ok=True)
     with open(f'{cdir2}/step-2.slurm', mode="w", encoding="utf-8") as f:
