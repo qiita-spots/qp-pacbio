@@ -80,7 +80,7 @@ def generate_templates(out_dir, job_id, njobs):
             nprocs=16,
             wall_time_limit=1000,
             mem_in_gb=300,
-            array_params=f'1:{njobs}%16'
+            array_params=f'1-{njobs}%16'
         ))
 
 
@@ -97,7 +97,7 @@ def generate_templates(out_dir, job_id, njobs):
             nprocs=16,
             wall_time_limit=1000,
             mem_in_gb=300,
-            array_params=f'1:{njobs}%16'
+            array_params=f'1-{njobs}%16'
         ))
 
     template2 = jinja_env.get_template("2.get-circular-genomes.sbatch")
@@ -113,7 +113,7 @@ def generate_templates(out_dir, job_id, njobs):
             nprocs=1,
             wall_time_limit=500,
             mem_in_gb=16,
-            array_params=f'1:{njobs}%16'
+            array_params=f'1-{njobs}%16'
         ))
 
 
