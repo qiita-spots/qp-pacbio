@@ -184,10 +184,10 @@ def pacbio_processing(qclient, job_id, parameters, out_dir):
     generate_templates(out_dir, job_id, njobs)
 
     # Submit Step 0 (independent)
-    jid0 = qclient.submit_job(f'{out_dir}/step-0/step-0.slurm')
+    # jid0 = qclient.submit_job(f'{out_dir}/step-0/step-0.slurm')
 
     # Submit Step 1 (independent) and capture its Slurm jobid
-    jid1 = qclient.submit_job(f'{out_dir}/step-1/step-1.slurm')
+    # jid1 = qclient.submit_job(f'{out_dir}/step-1/step-1.slurm')
 
     # Re-render Step 2 with dependency on the corresponding task of Step 1
     # (Overwrites step-2/step-2.slurm to inject --dependency)
@@ -209,7 +209,7 @@ def pacbio_processing(qclient, job_id, parameters, out_dir):
         ))
 
     # Submit Step 2 (now chained to Step 1 with aftercorr)
-    jid2 = qclient.submit_job(f'{out_dir}/step-2/step-2.slurm')
+    # jid2 = qclient.submit_job(f'{out_dir}/step-2/step-2.slurm')
 
     qclient.update_job_step(
             job_id, "Step 3 of 3: Running commands")
