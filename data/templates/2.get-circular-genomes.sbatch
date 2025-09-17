@@ -17,7 +17,11 @@ cd {{output}}/step-1
 step=${SLURM_ARRAY_TASK_ID} ##1000_2, 1000_1
 
 input=$(head -n $step {{output}}/sample_list.txt | tail -n 1)
-fn=`basename ${input}`
+
+sample_name=`echo $input | awk '{print $1}'`
+filename=`echo $input | awk '{print $2}'`
+
+fn=`basename ${filename}`
 
 cat ${fn}.p_ctg.gfa | awk '$1=="S" && ($2 ~ /.c$/) {printf ">%s\n%s\n", $2, $3} ' > ../step-2/${fn}_circ.fa
 seqkit split --by-id ../step-2/${fn}_circ.fa -O ../step-2/${fn}_split

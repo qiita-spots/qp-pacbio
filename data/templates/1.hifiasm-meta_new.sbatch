@@ -14,5 +14,10 @@ conda activate {{conda_environment}}
 cd {{output}}/step-1
 step=${SLURM_ARRAY_TASK_ID}
 input=$(head -n $step {{output}}/sample_list.txt | tail -n 1)
-fn=`basename ${input}`
-hifiasm_meta -t {{nprocs}} -o {{output}}/step-1/${fn} ${input}
+
+sample_name=`echo $input | awk '{print $1}'`
+filename=`echo $input | awk '{print $2}'`
+
+fn=`basename ${filename}`
+
+hifiasm_meta -t {{nprocs}} -o {{output}}/step-1/${fn} ${filename}
