@@ -41,4 +41,4 @@ for f in *.fa; do
 done
 
 sed -i 's/>//' circular_id.txt
-seqkit grep -v -f circular_id.txt ../step-2/${fn}_all_contigs.fa > ../step-2/${fn}_noLCG.fa
+seqkit grep -v -f circular_id.txt ../${fn}_all_contigs.fa > ../${fn}_noLCG.fa
