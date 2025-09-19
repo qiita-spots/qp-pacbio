@@ -116,6 +116,23 @@ def generate_templates(out_dir, job_id, njobs):
             array_params=f'1-{njobs}%16'
         ))
 
+    template3 = jinja_env.get_template("3.minimap2_assembly.sbatch")
+    cdir3 = f'{out_dir}/step-3'
+    makedirs(cdir3)
+    makedirs(f'{cdir3}/logs', exist_ok=True)
+    with open(f'{cdir3}/step-3.slurm', mode="w", encoding="utf-8") as f:
+        f.write(template3.render(
+            conda_environment='qp_pacbio_2025.9',
+            output=f'{out_dir}',
+            job_name=f's2-{job_id}',
+            node_count=1,
+            nprocs=8,
+            wall_time_limit=500,
+            mem_in_gb=50,
+            array_params=f'1-{njobs}%16'
+        ))
+    
+
 
 def generate_sample_list(qclient, artifact_id, out_dir):
     """Generates the sample_list.txt file of sample names/files to be

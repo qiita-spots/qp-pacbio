@@ -22,7 +22,6 @@ fn=`basename ${filename}`
 
 
 folder=step-3/${fn}_binning
-
 mkdir -p ${folder}
-minimap2 -x map-hifi -t {{nprocs}} -a --MD --eqx -o ${folder}/${fn}.sam step-2/${fn}.sam ${filename}
+minimap2 -x map-hifi -t {{nprocs}} -a --MD --eqx -o ${folder}/${fn}.sam step-2/${fn}_noLCG.fa ${filename}
 samtools view -bS -@4 ${folder}/${fn}.sam | samtools sort -@4 -O bam -o ${folder}/${fn}.sorted.bam
