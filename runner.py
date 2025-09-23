@@ -51,7 +51,7 @@ def runner(artifact_id, out_dir, job_id):
     print(qclient.artifact_and_preparation_files(artifact_id))
 
     jid0 = sbatch(['sbatch', '--parsable', f'{out_dir}/step-0/step-0.slurm'])
-    jid1 = sbatch(['sbatch', '--parsable', '--dependency', f'aftercorr:{jid0}', f'{out_dir}/step-1/step-1.slurm'])
+    jid1 = sbatch(['sbatch', '--parsable', f'{out_dir}/step-1/step-1.slurm'])
     jid2 = sbatch(['sbatch', '--parsable', '--dependency', f'aftercorr:{jid1}', f'{out_dir}/step-2/step-2.slurm'])
     jid3 = sbatch(['sbatch', '--parsable', '--dependency', f'aftercorr:{jid2}', f'{out_dir}/step-3/step-3.slurm'])
     jid4 = sbatch(['sbatch', '--parsable', '--dependency', f'aftercorr:{jid3}', f'{out_dir}/step-4/step-4.slurm'])
