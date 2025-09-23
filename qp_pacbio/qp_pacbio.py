@@ -164,7 +164,7 @@ def generate_templates(out_dir, job_id, njobs):
             array_params=f'1-{njobs}%16'
         ))
 
-    template6 = jinja_env.get_template("6.MAG_renaming.sbatch")
+    template6 = jinja_env.get_template("6.MAG_rename.sbatch")
     cdir6 = f'{out_dir}/step-6'
     makedirs(cdir6)
     makedirs(f'{cdir6}/logs', exist_ok=True)
