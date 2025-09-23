@@ -7,6 +7,7 @@
 #SBATCH --mem {{mem_in_gb}}G
 #SBATCH -o {{output}}/step-4/logs/%x-%A.out
 #SBATCH -e {{output}}/step-4/logs/%x-%A.err
+#SBATCH --array {{array_params}}
 
 conda activate {{conda_environment}}
 

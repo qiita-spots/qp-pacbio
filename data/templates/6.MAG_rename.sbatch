@@ -7,20 +7,27 @@
 #SBATCH --mem {{mem_in_gb}}G
 #SBATCH -o {{output}}/step-6/logs/%x-%A.out
 #SBATCH -e {{output}}/step-6/logs/%x-%A.err
+#SBATCH --array {{array_params}}
 
 conda activate {{conda_environment}}
 cd {{output}}
 
 step=${SLURM_ARRAY_TASK_ID}
 input=$(head -n $step {{output}}/sample_list.txt | tail -n 1)
-fn=`basename ${input}`
-folder=step-6/
+sample_name=`echo $input | awk '{print $1}'`
+filename=`echo $input | awk '{print $2}'`
 
-cd 03B.DASTool_refinement/${name}/${name}_DASTool_bins
+fn=`basename ${filename}`
+folder=step-6/${fn}_MAG_rename
+mkdir -p ${folder}
+
+cd {{output}}/step-5/${fn}_refinement/${fn}/${fn}_DASTool_bins
 
 for f in *.fa; do
     k=${f##*/}
-    a="${name}_${k}"
-    cp "$k" "$a"
+    a="${filename}_${k}"
+    mv "$k" "$a"
 done
-cp ./bc*.fa step-6/
+cp ./${filename}*.fa step-6/${fn}_MAG_rename
+
+#### where do we store the MAGS?

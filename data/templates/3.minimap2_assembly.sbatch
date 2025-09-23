@@ -7,7 +7,7 @@
 #SBATCH --mem {{mem_in_gb}}G
 #SBATCH -o {{output}}/step-3/logs/%x-%A.out
 #SBATCH -e {{output}}/step-3/logs/%x-%A.err
-{% if dependency %}#SBATCH --dependency={{ dependency }}{% endif %}
+#SBATCH --array {{array_params}}
 
 
 conda activate {{conda_environment}}

@@ -131,6 +131,70 @@ def generate_templates(out_dir, job_id, njobs):
             mem_in_gb=50,
             array_params=f'1-{njobs}%16'
         ))
+
+    template4 = jinja_env.get_template("4.metawrap_binning_new.sbatch")
+    cdir4 = f'{out_dir}/step-4'
+    makedirs(cdir4)
+    makedirs(f'{cdir4}/logs', exist_ok=True)
+    with open(f'{cdir4}/step-4.slurm', mode="w", encoding="utf-8") as f:
+        f.write(template4.render(
+            conda_environment='qp_pacbio_2025.9',
+            output=f'{out_dir}',
+            job_name=f's2-{job_id}',
+            node_count=1,
+            nprocs=8,
+            wall_time_limit=500,
+            mem_in_gb=50,
+            array_params=f'1-{njobs}%16'
+        ))
+    
+    template5 = jinja_env.get_template("5.DAS_Tools_prepare_batch3_test.sbatch")
+    cdir5 = f'{out_dir}/step-5'
+    makedirs(cdir5)
+    makedirs(f'{cdir5}/logs', exist_ok=True)
+    with open(f'{cdir5}/step-5.slurm', mode="w", encoding="utf-8") as f:
+        f.write(template5.render(
+            conda_environment='qp_pacbio_2025.9',
+            output=f'{out_dir}',
+            job_name=f's2-{job_id}',
+            node_count=1,
+            nprocs=8,
+            wall_time_limit=500,
+            mem_in_gb=50,
+            array_params=f'1-{njobs}%16'
+        ))
+
+    template6 = jinja_env.get_template("6.MAG_renaming.sbatch")
+    cdir6 = f'{out_dir}/step-6'
+    makedirs(cdir6)
+    makedirs(f'{cdir6}/logs', exist_ok=True)
+    with open(f'{cdir6}/step-6.slurm', mode="w", encoding="utf-8") as f:
+        f.write(template6.render(
+            conda_environment='qp_pacbio_2025.9',
+            output=f'{out_dir}',
+            job_name=f's2-{job_id}',
+            node_count=1,
+            nprocs=8,
+            wall_time_limit=500,
+            mem_in_gb=50,
+            array_params=f'1-{njobs}%16'
+        ))
+
+    template7 = jinja_env.get_template("7.checkm_batch.sbatch")
+    cdir7 = f'{out_dir}/step-7'
+    makedirs(cdir7)
+    makedirs(f'{cdir7}/logs', exist_ok=True)
+    with open(f'{cdir7}/step-7.slurm', mode="w", encoding="utf-8") as f:
+        f.write(template7.render(
+            conda_environment='qp_pacbio_2025.9',
+            output=f'{out_dir}',
+            job_name=f's2-{job_id}',
+            node_count=1,
+            nprocs=8,
+            wall_time_limit=500,
+            mem_in_gb=50,
+            array_params=f'1-{njobs}%16'
+        ))
     
 
 

@@ -8,7 +8,7 @@
 #SBATCH -o {{output}}/step-2/logs/%x-%A.out
 #SBATCH -e {{output}}/step-2/logs/%x-%A.err
 #SBATCH --array {{array_params}}
-{% if dependency %}#SBATCH --dependency={{ dependency }}{% endif %}
+
 
 conda activate {{conda_environment}}
 

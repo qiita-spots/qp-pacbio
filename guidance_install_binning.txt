@@ -1,0 +1,9 @@
+## Guidance on how to install software for binning step
+
+
+### new metawrap binning bash script
+
+
+### dependencies
+
+1. 
