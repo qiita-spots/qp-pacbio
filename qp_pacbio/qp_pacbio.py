@@ -124,7 +124,7 @@ def generate_templates(out_dir, job_id, njobs):
         f.write(template3.render(
             conda_environment='qp_pacbio_2025.9',
             output=f'{out_dir}',
-            job_name=f's2-{job_id}',
+            job_name=f's3-{job_id}',
             node_count=1,
             nprocs=8,
             wall_time_limit=500,
@@ -140,7 +140,7 @@ def generate_templates(out_dir, job_id, njobs):
         f.write(template4.render(
             conda_environment='qp_pacbio_2025.9',
             output=f'{out_dir}',
-            job_name=f's2-{job_id}',
+            job_name=f's4-{job_id}',
             node_count=1,
             nprocs=8,
             wall_time_limit=500,
@@ -156,7 +156,7 @@ def generate_templates(out_dir, job_id, njobs):
         f.write(template5.render(
             conda_environment='qp_pacbio_2025.9',
             output=f'{out_dir}',
-            job_name=f's2-{job_id}',
+            job_name=f's5-{job_id}',
             node_count=1,
             nprocs=8,
             wall_time_limit=500,
@@ -172,7 +172,7 @@ def generate_templates(out_dir, job_id, njobs):
         f.write(template6.render(
             conda_environment='qp_pacbio_2025.9',
             output=f'{out_dir}',
-            job_name=f's2-{job_id}',
+            job_name=f's6-{job_id}',
             node_count=1,
             nprocs=8,
             wall_time_limit=500,
@@ -188,7 +188,7 @@ def generate_templates(out_dir, job_id, njobs):
         f.write(template7.render(
             conda_environment='qp_pacbio_2025.9',
             output=f'{out_dir}',
-            job_name=f's2-{job_id}',
+            job_name=f's7-{job_id}',
             node_count=1,
             nprocs=8,
             wall_time_limit=500,
