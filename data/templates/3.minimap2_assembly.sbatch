@@ -21,7 +21,7 @@ filename=`echo $input | awk '{print $2}'`
 fn=`basename ${filename}`
 
 
-folder=step-3/${fn}_binning
+folder=step-3/${sample_name}_binning
 mkdir -p ${folder}
-minimap2 -x map-hifi -t {{nprocs}} -a --MD --eqx -o ${folder}/${fn}.sam step-2/${fn}_noLCG.fa ${filename}
-samtools view -bS -@4 ${folder}/${fn}.sam | samtools sort -@4 -O bam -o ${folder}/${fn}.sorted.bam
+minimap2 -x map-hifi -t {{nprocs}} -a --MD --eqx -o ${folder}/${sample_name}.sam step-2/${sample_name}_noLCG.fa ${filename}
+samtools view -bS -@4 ${folder}/${sample_name}.sam | samtools sort -@4 -O bam -o ${folder}/${sample_name}.sorted.bam

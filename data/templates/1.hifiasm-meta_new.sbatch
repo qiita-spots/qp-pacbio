@@ -20,4 +20,4 @@ filename=`echo $input | awk '{print $2}'`
 
 fn=`basename ${filename}`
 
-hifiasm_meta -t {{nprocs}} -o {{output}}/step-1/${fn} ${filename}
+hifiasm_meta -t {{nprocs}} -o {{output}}/step-1/${sample_name} ${filename}

@@ -23,8 +23,8 @@ fn=`basename ${filename}`
 folder=step-7/checkm_out
 mkdir -p ${folder}
 
-cd step-5/${fn}_refinement/${fn}/${fn}_DASTool_bins
+cd step-5/${sample_name}_refinement/${sample_name}/${sample_name}_DASTool_bins
 
-checkm lineage_wf ./ ./checkm_out -x fa -t 8 --tab_table -f ../${fn}_checkm_table.txt --pplacer_threads 2
+checkm lineage_wf ./ ./checkm_out -x fa -t 8 --tab_table -f ../${sample_name}_checkm_table.txt --pplacer_threads 2
 cd ../
-cp ${fn}_checkm_table.txt {{output}}/step-7/checkm_out/
+cp ${sample_name}_checkm_table.txt {{output}}/step-7/checkm_out/

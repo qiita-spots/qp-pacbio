@@ -23,13 +23,13 @@ filename=`echo $input | awk '{print $2}'`
 
 fn=`basename ${filename}`
 
-cat ${fn}.p_ctg.gfa | awk '$1=="S" && ($2 ~ /.c$/) {printf ">%s\n%s\n", $2, $3} ' > ../step-2/${fn}_circ.fa
-seqkit split --by-id ../step-2/${fn}_circ.fa -O ../step-2/${fn}_split
+cat ${sample_name}.p_ctg.gfa | awk '$1=="S" && ($2 ~ /.c$/) {printf ">%s\n%s\n", $2, $3} ' > ../step-2/${sample_name}_circ.fa
+seqkit split --by-id ../step-2/${sample_name}_circ.fa -O ../step-2/${sample_name}_split
 
 ### get all contigs for each sample
-cat ${fn}.p_ctg.gfa | awk '$1=="S" {printf ">%s\n%s\n", $2, $3} ' > ../step-2/${fn}_all_contigs.fa
+cat ${sample_name}.p_ctg.gfa | awk '$1=="S" {printf ">%s\n%s\n", $2, $3} ' > ../step-2/${sample_name}_all_contigs.fa
 
-cd ../step-2/${fn}_split
+cd ../step-2/${sample_name}_split
 
 ### remove small circular genomes
 find . -type f -size -512k -exec rm -f {} +
@@ -41,4 +41,4 @@ for f in *.fa; do
 done
 
 sed -i 's/>//' circular_id.txt
-seqkit grep -v -f circular_id.txt ../${fn}_all_contigs.fa > ../${fn}_noLCG.fa
+seqkit grep -v -f circular_id.txt ../${sample_name}_all_contigs.fa > ../${sample_name}_noLCG.fa

@@ -18,16 +18,16 @@ sample_name=`echo $input | awk '{print $1}'`
 filename=`echo $input | awk '{print $2}'`
 
 fn=`basename ${filename}`
-folder=step-6/${fn}_MAG_rename
+folder=step-6/${sample_name}_MAG_rename
 mkdir -p ${folder}
 
-cd {{output}}/step-5/${fn}_refinement/${fn}/${fn}_DASTool_bins
+cd {{output}}/step-5/${sample_name}_refinement/${sample_name}/${sample_name}_DASTool_bins
 
 for f in *.fa; do
     k=${f##*/}
     a="${filename}_${k}"
     mv "$k" "$a"
 done
-cp ./${filename}*.fa step-6/${fn}_MAG_rename
+cp ./${filename}*.fa step-6/${sample_name}_MAG_rename
 
 #### where do we store the MAGS?

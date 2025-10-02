@@ -19,12 +19,12 @@ sample_name=`echo $input | awk '{print $1}'`
 filename=`echo $input | awk '{print $2}'`
 
 fn=`basename ${filename}`
-folder=step-4/${fn}_binning
+folder=step-4/${sample_name}_binning
 
 mkdir -p {{output}}/${folder}/work_files/
-cp {{output}}/step-3/${fn}_binning/${fn}.sorted.bam {{output}}/step-4/${fn}_binning/work_files/${fn}.bam
-rm {{output}}/step-3/${fn}_binning/${fn}.sorted.bam
+cp {{output}}/step-3/${sample_name}_binning/${sample_name}.sorted.bam {{output}}/step-4/${sample_name}_binning/work_files/${sample_name}.bam
+rm {{output}}/step-3/${sample_name}_binning/${sample_name}.sorted.bam
 
-ln -s ${filename} {{output}}/step-4/${fn}_binning/work_files/${fn}.fastq
-metawrap binning -a {{output}}/step-2/${fn}.noLCG.fa -o {{output}}/step-4/${fn}_binning \
-   -t {{nprocs}} -m 100 -l 16000 --single-end --metabat2 --maxbin2 --concoct --universal {{output}}/step-4/${fn}_binning/work_files/${fn}.fastq
+ln -s ${filename} {{output}}/step-4/${sample_name}_binning/work_files/${sample_name}.fastq
+metawrap binning -a {{output}}/step-2/${sample_name}.noLCG.fa -o {{output}}/step-4/${sample_name}_binning \
+   -t {{nprocs}} -m 100 -l 16000 --single-end --metabat2 --maxbin2 --concoct --universal {{output}}/step-4/${sample_name}_binning/work_files/${sample_name}.fastq
