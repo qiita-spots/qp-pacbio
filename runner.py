@@ -6,16 +6,24 @@
 #
 # The full license is in the file LICENSE, distributed with this software.
 # -----------------------------------------------------------------------------
-from qp_pacbio.qp_pacbio import generate_sample_list, generate_templates
-from qiita_client import QiitaClient
 from configparser import ConfigParser
 from os import environ
-from os.path import join, expanduser
+from os.path import expanduser, join
+
+from qp_pacbio.qp_pacbio import generate_sample_list, generate_templates
+from qiita_client import QiitaClient
+
 import click
-from subprocess import run, PIPE
+from subprocess import run
 
 # Using woltka because we don't have a qp_pacbio command
-plugin_details = {"name": "qp-woltka", "version": "2024.09", "description": "Woltka"}
+plugin_details = {
+    "name": "qp-woltka",
+    "version": "2024.09",
+    "description": "Woltka",
+}
+
+QIITA_URL = "https://qiita.ucsd.edu"
 
 
 def client_connect(url):
@@ -23,18 +31,20 @@ def client_connect(url):
     version = plugin_details["version"]
 
     config = ConfigParser()
-    conf_dir = environ.get("QIITA_PLUGINS_DIR", join(expanduser("~"), ".qiita_plugins"))
+    conf_dir = environ.get(
+        "QIITA_PLUGINS_DIR", join(expanduser("~"), ".qiita_plugins")
+    )
     conf_fp = join(conf_dir, f"{name}_{version}.conf")
 
-    with open(conf_fp, "r") as conf_file:
-        config.readfp(conf_file)
+    with open(conf_fp, "r", encoding="utf-8") as conf_file:
+        config.read_file(conf_file)
+
     qclient = QiitaClient(
         url,
         config.get("oauth2", "CLIENT_ID"),
         config.get("oauth2", "CLIENT_SECRET"),
         config.get("oauth2", "SERVER_CERT"),
     )
-
     return qclient
 
 
@@ -44,10 +54,10 @@ def client_connect(url):
 @click.option("--job_id", help="job id", required=True)
 def runner(artifact_id, out_dir, job_id):
     def sbatch(args):
-        r = run(args, check=True, capture_output=True, text=True)
-        return r.stdout.strip()
+        res = run(args, check=True, capture_output=True, text=True)
+        return res.stdout.strip()
 
-    qclient = client_connect("https://qiita.ucsd.edu")
+    qclient = client_connect(QIITA_URL)
     njobs = generate_sample_list(qclient, artifact_id, out_dir)
     generate_templates(out_dir, job_id, njobs)
     print(qclient.artifact_and_preparation_files(artifact_id))
@@ -109,9 +119,8 @@ def runner(artifact_id, out_dir, job_id):
         ]
     )
 
-    print(
-        f"Submitted jobs: {jid0}, {jid1}, {jid2}, {jid3}, {jid4}, {jid5}, {jid6}, {jid7}"
-    )
+    submitted = [jid0, jid1, jid2, jid3, jid4, jid5, jid6, jid7]
+    print("Submitted jobs: " + ", ".join(submitted))
 
 
 if __name__ == "__main__":
