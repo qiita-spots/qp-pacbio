@@ -102,7 +102,9 @@ class PacBioTests(PluginTestCase):
         self._clean_up_files.append(out_dir)
 
         # this should fail cause we don't have valid data
-        success, ainfo, msg = pacbio_processing(self.qclient, job_id, params, out_dir)
+        success, ainfo, msg = pacbio_processing(
+            self.qclient, job_id, params, out_dir
+        )
 
         # testing file creation, just number of lines and header
         with open(f"{out_dir}/sample_list.txt", "r") as f:
@@ -114,12 +116,17 @@ class PacBioTests(PluginTestCase):
             # removing \n
             obs_lines = [ln.replace("\n", "") for ln in f.readlines()]
 
-        self.assertCountEqual(STEP_1_EXP.format(out_dir=out_dir).split("\n"), obs_lines)
+        self.assertCountEqual(
+            STEP_1_EXP.format(out_dir=out_dir).split("\n"),
+            obs_lines,
+        )
 
         self.assertTrue(success)
         exp = [
             ArtifactInfo(
-                "output", "job-output-folder", [(f"{out_dir}/results/", "directory")]
+                "output",
+                "job-output-folder",
+                [(f"{out_dir}/results/", "directory")],
             )
         ]
         self.assertCountEqual(ainfo, exp)
