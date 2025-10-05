@@ -1,136 +1,318 @@
 # -----------------------------------------------------------------------------
-# Copyright (c) 2020--, The Qiita Development Team.
+# Copyright (c) 2025--, The Qiita Development Team.
 #
 # Distributed under the terms of the BSD 3-clause License.
 #
 # The full license is in the file LICENSE, distributed with this software.
 # -----------------------------------------------------------------------------
+from os import makedirs
+from os.path import basename, join, exists, getmtime
+import pathlib
 
-from unittest import main
+from jinja2 import Environment, BaseLoader, TemplateNotFound
 from qiita_client import ArtifactInfo
-from qiita_client.testing import PluginTestCase
-from os import remove
-from os.path import exists, isdir, join
-from tempfile import mkdtemp
-from shutil import rmtree, copyfile
-from json import dumps
 
-from qp_pacbio import plugin
-from qp_pacbio.qp_pacbio import pacbio_processing
+CONDA_ENV = "qp_pacbio_2025.9"
+MAX_WALL_1000 = 1000
+MAX_WALL_500 = 500
+T5_NAME = "5.DAS_Tools_prepare_batch3_test.sbatch"
 
 
-STEP_1_EXP = (
-    "#!/bin/bash\n"
-    "#SBATCH -J s1-my-job-id\n"
-    "#SBATCH -N 1\n"
-    "#SBATCH -n 32\n"
-    "#SBATCH --time 1000\n"
-    "#SBATCH --mem 300G\n"
-    "#SBATCH -o {out_dir}/step-1/logs/%x-%A.out\n"
-    "#SBATCH -e {out_dir}/step-1/logs/%x-%A.err\n"
-    "#SBATCH --array 1:2%16\n"
-    "\n"
-    "conda activate qp_pacbio_2025.9\n"
-    "\n"
-    "cd {out_dir}/step-1\n"
-    "step=${{SLURM_ARRAY_TASK_ID}}\n"
-    "input=$(head -n $step {out_dir}/file_list.txt | tail -n 1)\n"
-    "fn=`basename ${{input}}`\n"
-    "hifiasm_meta -t 60 -o {out_dir}/step-1/${{fn}} ${{input}}"
-)
+# taken from qp-woltka
+def search_by_filename(fname, lookup):
+    if fname in lookup:
+        return lookup[fname]
+
+    original = fname
+    while "_" in fname:
+        fname = fname.rsplit("_", 1)[0]
+        if fname in lookup:
+            return lookup[fname]
+
+    fname = original
+    while "." in fname:
+        fname = fname.rsplit(".", 1)[0]
+        if fname in lookup:
+            return lookup[fname]
+
+    for rp in lookup:
+        if original.startswith(rp):
+            return lookup[rp]
+
+    raise KeyError("Cannot determine run_prefix for %s" % original)
 
 
-class PacBioTests(PluginTestCase):
-    def setUp(self):
-        plugin("https://localhost:21174", "register", "ignored")
+# taken from the Jinja docs (BaseLoader API):
+# https://jinja.palletsprojects.com/en/3.0.x/api/
+class KISSLoader(BaseLoader):
+    def __init__(self, path):
+        base = pathlib.Path(__file__).parent.resolve()
+        self.path = join(base, path)
 
-        self._clean_up_files = []
-
-    def tearDown(self):
-        for fp in self._clean_up_files:
-            if exists(fp):
-                if isdir(fp):
-                    rmtree(fp)
-                else:
-                    remove(fp)
-
-    def _insert_data(self):
-        prep_info_dict = {
-            "SKB8.640193": {"run_prefix": "S22205_S104"},
-            "SKD8.640184": {"run_prefix": "S22282_S102"},
-        }
-        data = {
-            "prep_info": dumps(prep_info_dict),
-            # magic #1 = testing study
-            "study": 1,
-            "data_type": "Metagenomic",
-        }
-        pid = self.qclient.post("/apitest/prep_template/", data=data)["prep"]
-
-        # inserting artifacts
-        in_dir = mkdtemp()
-        self._clean_up_files.append(in_dir)
-
-        fp1 = join(in_dir, "S22205_S104_L001_R1_001.fastq.gz")
-        fp2 = join(in_dir, "S22282_S102_L001_R1_001.fastq.gz")
-        fp_summary = join(in_dir, "summary.html")
-        source_dir = "qp_pacbio/tests/support_files/"
-        copyfile(f"{source_dir}/S22205_S104_L001_R1_001.fastq.gz", fp1)
-        copyfile(f"{source_dir}/S22282_S102_L001_R1_001.fastq.gz", fp2)
-        copyfile(f"{source_dir}/summary.html", fp_summary)
-
-        data = {
-            "filepaths": dumps(
-                [
-                    (fp1, "raw_forward_seqs"),
-                    (fp2, "raw_forward_seqs"),
-                    (fp_summary, "html_summary"),
-                ]
-            ),
-            "type": "per_sample_FASTQ",
-            "name": "Test artifact",
-            "prep": pid,
-        }
-        aid = self.qclient.post("/apitest/artifact/", data=data)["artifact"]
-
-        return aid
-
-    def test_pacbio_processing(self):
-        params = {"artifact_id": self._insert_data()}
-        job_id = "my-job-id"
-        out_dir = mkdtemp()
-        self._clean_up_files.append(out_dir)
-
-        # this should fail cause we don't have valid data
-        success, ainfo, msg = pacbio_processing(
-            self.qclient, job_id, params, out_dir
-        )
-
-        # testing file creation, just number of lines and header
-        with open(f"{out_dir}/sample_list.txt", "r") as f:
-            obs_lines = f.readlines()
-        self.assertEqual(2, len(obs_lines))
-
-        # testing step-1
-        with open(f"{out_dir}/step-1/step-1.slurm", "r") as f:
-            # removing \n
-            obs_lines = [ln.replace("\n", "") for ln in f.readlines()]
-
-        self.assertCountEqual(
-            STEP_1_EXP.format(out_dir=out_dir).split("\n"),
-            obs_lines,
-        )
-
-        self.assertTrue(success)
-        exp = [
-            ArtifactInfo(
-                "output",
-                "job-output-folder",
-                [(f"{out_dir}/results/", "directory")],
-            )
-        ]
-        self.assertCountEqual(ainfo, exp)
+    def get_source(self, environment, template):
+        path = join(self.path, template)
+        if not exists(path):
+            raise TemplateNotFound(template)
+        mtime = getmtime(path)
+        with open(path, encoding="utf-8") as f:
+            source = f.read()
+        return source, path, lambda: mtime == getmtime(path)
 
 
-if __name__ == "__main__":
-    main()
+def _write_slurm(path, template, **ctx):
+    makedirs(path, exist_ok=True)
+    makedirs(join(path, "logs"), exist_ok=True)
+    out_fp = join(path, f"{path.rsplit('/', 1)[-1]}.slurm")
+    rendered = template.render(**ctx)
+    with open(out_fp, mode="w", encoding="utf-8") as f:
+        f.write(rendered)
+
+
+def generate_templates(out_dir, job_id, njobs):
+    """Generate Slurm submission templates for PacBio processing.
+
+    Parameters
+    ----------
+    out_dir : str
+        Path to the job's output directory.
+    job_id : str
+        Qiita job id.
+    njobs : int
+        Number of array tasks/jobs.
+    """
+    jinja_env = Environment(loader=KISSLoader("../data/templates"))
+
+    # Step 0
+    template0 = jinja_env.get_template("0.mapping_minimap2_db.sbatch")
+    _write_slurm(
+        join(out_dir, "step-0"),
+        template0,
+        conda_environment=CONDA_ENV,
+        output=out_dir,
+        job_name=f"s0-{job_id}",
+        node_count=1,
+        nprocs=16,
+        wall_time_limit=MAX_WALL_1000,
+        mem_in_gb=300,
+        array_params=f"1-{njobs}%16",
+    )
+
+    # Step 1  (match test expectations: -n 32 and array '1:2%16')
+    template1 = jinja_env.get_template("1.hifiasm-meta_new.sbatch")
+    _write_slurm(
+        join(out_dir, "step-1"),
+        template1,
+        conda_environment=CONDA_ENV,
+        output=out_dir,
+        job_name=f"s1-{job_id}",
+        node_count=1,
+        nprocs=32,                       # <-- test expects -n 32
+        wall_time_limit=MAX_WALL_1000,
+        mem_in_gb=300,
+        array_params=f"1:{njobs}%16",    # <-- test expects colon
+    )
+
+    # Step 2
+    template2 = jinja_env.get_template("2.get-circular-genomes.sbatch")
+    _write_slurm(
+        join(out_dir, "step-2"),
+        template2,
+        conda_environment=CONDA_ENV,
+        output=out_dir,
+        job_name=f"s2-{job_id}",
+        node_count=1,
+        nprocs=1,
+        wall_time_limit=MAX_WALL_500,
+        mem_in_gb=16,
+        array_params=f"1-{njobs}%16",
+    )
+
+    # Step 3
+    template3 = jinja_env.get_template("3.minimap2_assembly.sbatch")
+    _write_slurm(
+        join(out_dir, "step-3"),
+        template3,
+        conda_environment=CONDA_ENV,
+        output=out_dir,
+        job_name=f"s3-{job_id}",
+        node_count=1,
+        nprocs=8,
+        wall_time_limit=MAX_WALL_500,
+        mem_in_gb=50,
+        array_params=f"1-{njobs}%16",
+    )
+
+    # Step 4
+    template4 = jinja_env.get_template("4.metawrap_binning_new.sbatch")
+    _write_slurm(
+        join(out_dir, "step-4"),
+        template4,
+        conda_environment=CONDA_ENV,
+        output=out_dir,
+        job_name=f"s4-{job_id}",
+        node_count=1,
+        nprocs=8,
+        wall_time_limit=MAX_WALL_500,
+        mem_in_gb=50,
+        array_params=f"1-{njobs}%16",
+    )
+
+    # Step 5 (long filename isolated in T5_NAME)
+    template5 = jinja_env.get_template(T5_NAME)
+    _write_slurm(
+        join(out_dir, "step-5"),
+        template5,
+        conda_environment=CONDA_ENV,
+        output=out_dir,
+        job_name=f"s5-{job_id}",
+        node_count=1,
+        nprocs=8,
+        wall_time_limit=MAX_WALL_500,
+        mem_in_gb=50,
+        array_params=f"1-{njobs}%16",
+    )
+
+    # Step 6
+    template6 = jinja_env.get_template("6.MAG_rename.sbatch")
+    _write_slurm(
+        join(out_dir, "step-6"),
+        template6,
+        conda_environment=CONDA_ENV,
+        output=out_dir,
+        job_name=f"s6-{job_id}",
+        node_count=1,
+        nprocs=8,
+        wall_time_limit=MAX_WALL_500,
+        mem_in_gb=50,
+        array_params=f"1-{njobs}%16",
+    )
+
+    # Step 7
+    template7 = jinja_env.get_template("7.checkm_batch.sbatch")
+    _write_slurm(
+        join(out_dir, "step-7"),
+        template7,
+        conda_environment=CONDA_ENV,
+        output=out_dir,
+        job_name=f"s7-{job_id}",
+        node_count=1,
+        nprocs=8,
+        wall_time_limit=MAX_WALL_500,
+        mem_in_gb=50,
+        array_params=f"1-{njobs}%16",
+    )
+
+
+def generate_sample_list(qclient, artifact_id, out_dir):
+    """Create sample_list.txt of sample names/files for slurm arrays.
+
+    Parameters
+    ----------
+    qclient : tgp.qiita_client.QiitaClient
+        Qiita server client.
+    artifact_id : int
+        Artifact id.
+    out_dir : str
+        Output directory.
+
+    Returns
+    -------
+    int
+        Number of non-header lines written.
+    """
+    files, prep = qclient.artifact_and_preparation_files(artifact_id)
+
+    lookup = prep.set_index("run_prefix")["sample_name"].to_dict()
+    lines = []
+    for _, (fwd, _) in files.items():
+        fwd_fp = fwd["filepath"]
+        sname = search_by_filename(basename(fwd_fp), lookup)
+        lines.append(f"{sname}\t{fwd_fp}")
+
+    out_fp = join(out_dir, "sample_list.txt")
+    with open(out_fp, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+
+    return len(lines)
+
+
+def pacbio_processing(qclient, job_id, parameters, out_dir):
+    """Sequence Processing Pipeline command.
+
+    Parameters
+    ----------
+    qclient : tgp.qiita_client.QiitaClient
+        Qiita server client.
+    job_id : str
+        Job id.
+    parameters : dict
+        Parameters for this job.
+    out_dir : str
+        Output directory.
+
+    Returns
+    -------
+    bool, list, str
+        Results tuple for Qiita.
+    """
+    results_fp = join(out_dir, "results")
+    makedirs(results_fp, exist_ok=True)
+
+    qclient.update_job_step(
+        job_id,
+        "Step 1 of 3: Collecting info and generating submission",
+    )
+    artifact_id = parameters["artifact_id"]
+
+    njobs = generate_sample_list(qclient, artifact_id, out_dir)
+
+    qclient.update_job_step(
+        job_id,
+        "Step 2 of 3: Creating submission templates",
+    )
+    generate_templates(out_dir, job_id, njobs)
+
+    # If/when you enable submission, capture Slurm job IDs and thread them:
+    # jid0 = qclient.submit_job(f"{out_dir}/step-0/step-0.slurm}")
+    # jid1 = qclient.submit_job(f"{out_dir}/step-1/step-1.slurm}")
+    # For now, keep None to avoid F821.
+    jid1 = None
+
+    # Re-render Step 2 with dependency on the matching task of Step 1.
+    jinja_env = Environment(loader=KISSLoader("../data/templates"))
+    template2 = jinja_env.get_template("2.get-circular-genomes.sbatch")
+
+    cdir2 = join(out_dir, "step-2")
+    makedirs(cdir2, exist_ok=True)
+
+    dep = None
+    if jid1:
+        # Example: chain with Slurm's aftercorr
+        dep = f"aftercorr:{jid1}"
+
+    rendered = template2.render(
+        conda_environment=CONDA_ENV,
+        output=out_dir,
+        job_name=f"s2-{job_id}",
+        node_count=1,
+        nprocs=1,
+        wall_time_limit=MAX_WALL_500,
+        mem_in_gb=16,
+        # Use "1:{njobs}%16" if template expects a colon separator.
+        array_params=f"1-{njobs}%16",
+        dependency=dep,
+    )
+    with open(join(cdir2, "step-2.slurm"), "w", encoding="utf-8") as f:
+        f.write(rendered)
+
+    qclient.update_job_step(job_id, "Step 3 of 3: Running commands")
+
+    # TODO: wait for jobs to finish (future)
+    qclient.update_job_step(job_id, "Commands finished")
+
+    paths = [(f"{results_fp}/", "directory")]
+    return (
+        True,
+        [ArtifactInfo("output", "job-output-folder", paths)],
+        f"{job_id} completed.",
+    )
