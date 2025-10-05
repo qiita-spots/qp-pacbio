@@ -15,6 +15,7 @@ from qiita_client import ArtifactInfo
 CONDA_ENV = "qp_pacbio_2025.9"
 MAX_WALL_1000 = 1000
 MAX_WALL_500 = 500
+T5_NAME = "5.DAS_Tools_prepare_batch3_test.sbatch"
 
 
 # taken from qp-woltka
@@ -41,8 +42,8 @@ def search_by_filename(fname, lookup):
     raise KeyError("Cannot determine run_prefix for %s" % original)
 
 
-# taken from
-# https://jinja.palletsprojects.com/en/3.0.x/api/#jinja2.BaseLoader
+# taken from the Jinja docs (BaseLoader API):
+# https://jinja.palletsprojects.com/en/3.0.x/api/
 class KISSLoader(BaseLoader):
     def __init__(self, path):
         base = pathlib.Path(__file__).parent.resolve()
@@ -156,8 +157,8 @@ def generate_templates(out_dir, job_id, njobs):
         array_params=f"1-{njobs}%16",
     )
 
-    # Step 5
-    template5 = jinja_env.get_template("5.DAS_Tools_prepare_batch3_test.sbatch")
+    # Step 5 (long filename isolated in T5_NAME)
+    template5 = jinja_env.get_template(T5_NAME)
     _write_slurm(
         join(out_dir, "step-5"),
         template5,
@@ -297,7 +298,7 @@ def pacbio_processing(qclient, job_id, parameters, out_dir):
         nprocs=1,
         wall_time_limit=MAX_WALL_500,
         mem_in_gb=16,
-        # Switch to "1:{njobs}%16" if your template expects colon
+        # Use "1:{njobs}%16" if template expects a colon separator.
         array_params=f"1-{njobs}%16",
         dependency=dep,
     )
