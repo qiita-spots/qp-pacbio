@@ -108,7 +108,7 @@ def generate_templates(out_dir, job_id, njobs):
         node_count=1,
         nprocs=16,
         wall_time_limit=MAX_WALL_1000,
-        mem_in_gb=300,
+        mem_in_gb=450,
         array_params=f"1-{njobs}%16",
     )
 

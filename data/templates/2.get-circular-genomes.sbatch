@@ -9,6 +9,7 @@
 #SBATCH -e {{output}}/step-2/logs/%x-%A_%a.out
 #SBATCH --array {{array_params}}
 
+source ~/.bashrc
 
 conda activate {{conda_environment}}
 
