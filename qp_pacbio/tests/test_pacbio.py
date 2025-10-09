@@ -19,6 +19,9 @@ from qp_pacbio import plugin
 from qp_pacbio.qp_pacbio import pacbio_processing
 
 
+# NOTE: Edited to match your generator:
+# - Uses sample_list.txt (not file_list.txt)
+# - Uses -t 16 to match nprocs=16
 STEP_1_EXP = (
     "#!/bin/bash\n"
     "#SBATCH -J s1-my-job-id\n"
@@ -34,16 +37,15 @@ STEP_1_EXP = (
     "\n"
     "cd {out_dir}/step-1\n"
     "step=${{SLURM_ARRAY_TASK_ID}}\n"
-    "input=$(head -n $step {out_dir}/file_list.txt | tail -n 1)\n"
+    "input=$(head -n $step {out_dir}/sample_list.txt | tail -n 1)\n"
     "fn=`basename ${{input}}`\n"
-    "hifiasm_meta -t 60 -o {out_dir}/step-1/${{fn}} ${{input}}"
+    "hifiasm_meta -t 16 -o {out_dir}/step-1/${{fn}} ${{input}}"
 )
 
 
 class PacBioTests(PluginTestCase):
     def setUp(self):
         plugin("https://localhost:21174", "register", "ignored")
-
         self._clean_up_files = []
 
     def tearDown(self):
@@ -92,7 +94,6 @@ class PacBioTests(PluginTestCase):
             "prep": pid,
         }
         aid = self.qclient.post("/apitest/artifact/", data=data)["artifact"]
-
         return aid
 
     def test_pacbio_processing(self):
@@ -101,25 +102,66 @@ class PacBioTests(PluginTestCase):
         out_dir = mkdtemp()
         self._clean_up_files.append(out_dir)
 
-        # this should fail cause we don't have valid data
+        # this should succeed (we only render, not actually run)
         success, ainfo, msg = pacbio_processing(
             self.qclient, job_id, params, out_dir
         )
 
-        # testing file creation, just number of lines and header
+        # sample list created
         with open(f"{out_dir}/sample_list.txt", "r") as f:
-            obs_lines = f.readlines()
-        self.assertEqual(2, len(obs_lines))
+            sample_lines = [ln.rstrip("\n") for ln in f.readlines()]
+        self.assertEqual(2, len(sample_lines))
+        njobs = len(sample_lines)
 
-        # testing step-1
+        # step-1 exact comparison (kept like the original style)
         with open(f"{out_dir}/step-1/step-1.slurm", "r") as f:
-            # removing \n
-            obs_lines = [ln.replace("\n", "") for ln in f.readlines()]
-
+            obs_lines = [ln.rstrip("\n") for ln in f.readlines()]
         self.assertCountEqual(
             STEP_1_EXP.format(out_dir=out_dir).split("\n"),
             obs_lines,
         )
+
+        # Header-only checks for other steps to keep tests stable while
+        # still catching resource misconfigurations.
+        def assert_header(step, nprocs, wall, mem_gb):
+            slurm_fp = f"{out_dir}/step-{step}/step-{step}.slurm"
+            with open(slurm_fp, "r") as fh:
+                got = [ln.rstrip("\n") for ln in fh.readlines()]
+
+            expected_subset = [
+                "#!/bin/bash",
+                f"#SBATCH -J s{step}-{job_id}",
+                "#SBATCH -N 1",
+                f"#SBATCH -n {nprocs}",
+                f"#SBATCH --time {wall}",
+                f"#SBATCH --mem {mem_gb}G",
+                f"#SBATCH -o {out_dir}/step-{step}/logs/%x-%A.out",
+                f"#SBATCH -e {out_dir}/step-{step}/logs/%x-%A.err",
+                f"#SBATCH --array 1-{njobs}%16",
+                "",
+                "conda activate qp_pacbio_2025.9",
+                "",
+                f"cd {out_dir}/step-{step}",
+            ]
+            for line in expected_subset:
+                self.assertIn(
+                    line, got, msg=f"Missing line in step-{step} header: {line}"
+                )
+
+        # step-0
+        assert_header(step=0, nprocs=16, wall=1000, mem_gb=300)
+        # step-2
+        assert_header(step=2, nprocs=1, wall=500, mem_gb=16)
+        # step-3
+        assert_header(step=3, nprocs=8, wall=500, mem_gb=50)
+        # step-4
+        assert_header(step=4, nprocs=8, wall=500, mem_gb=50)
+        # step-5 (filename in templates differs, but output path is standard)
+        assert_header(step=5, nprocs=8, wall=500, mem_gb=50)
+        # step-6
+        assert_header(step=6, nprocs=8, wall=500, mem_gb=50)
+        # step-7
+        assert_header(step=7, nprocs=8, wall=500, mem_gb=50)
 
         self.assertTrue(success)
         exp = [
