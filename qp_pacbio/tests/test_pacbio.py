@@ -145,7 +145,11 @@ class PacBioTests(PluginTestCase):
             ]
             for line in expected_subset:
                 self.assertIn(
-                    line, got, msg=f"Missing line in step-{step} header: {line}"
+                    line,
+                    got,
+                    msg=(
+                        f"Missing L in s-{step}: {line}"
+                    ),
                 )
 
         # step-0
