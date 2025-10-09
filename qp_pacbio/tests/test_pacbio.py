@@ -27,30 +27,36 @@ CONDA_ENV = "qp_pacbio_2025.9"
 STEP1_NPROCS = 16
 STEP1_WALL = 1000
 STEP1_MEM_GB = 300
+NODE_COUNT = 1
+PARTITION = "qiita"
 
-# Order-sensitive expected template for step-1.
-# NOTE:
-# - We parameterize job_id, out_dir, njobs to avoid brittle literals.
-# - If your generator uses a different --array scheme (e.g., 0-based or
-#   a different %concurrency), adjust the line accordingly.
+# Order-sensitive expected template for step-1, matching your current Jinja
+# (see the step-1 slurm you posted). IMPORTANT: we must escape any literal
+# ${...} shell variable by doubling braces so str.format leaves them intact.
 STEP_1_EXP = (
     "#!/bin/bash\n"
     "#SBATCH -J s1-{job_id}\n"
-    "#SBATCH -N 1\n"
+    f"#SBATCH -p {PARTITION}\n"
+    f"#SBATCH -N {NODE_COUNT}\n"
     f"#SBATCH -n {STEP1_NPROCS}\n"
     f"#SBATCH --time {STEP1_WALL}\n"
     f"#SBATCH --mem {STEP1_MEM_GB}G\n"
-    "#SBATCH -o {out_dir}/step-1/logs/%x-%A.out\n"
-    "#SBATCH -e {out_dir}/step-1/logs/%x-%A.err\n"
+    "#SBATCH -o {out_dir}/step-1/logs/%x-%A_%a.out\n"
+    "#SBATCH -e {out_dir}/step-1/logs/%x-%A_%a.out\n"
     "#SBATCH --array 1-{njobs}%16\n"
-    "\n"
+    "source ~/.bashrc\n"
     f"conda activate {CONDA_ENV}\n"
     "\n"
     "cd {out_dir}/step-1\n"
-    "step=${SLURM_ARRAY_TASK_ID}\n"
+    "step=${{SLURM_ARRAY_TASK_ID}}\n"
     "input=$(head -n $step {out_dir}/sample_list.txt | tail -n 1)\n"
-    "fn=`basename ${input}`\n"
-    f"hifiasm_meta -t {STEP1_NPROCS} -o {{out_dir}}/step-1/${{fn}} ${{input}}"
+    "\n"
+    "sample_name=`echo $input | awk '{print $1}'`\n"
+    "filename=`echo $input | awk '{print $2}'`\n"
+    "\n"
+    "fn=`basename ${{filename}}`\n"
+    f"hifiasm_meta -t {STEP1_NPROCS} -o "
+    "{{out_dir}}/step-1/${{sample_name}} ${{filename}}"
 )
 
 
@@ -69,7 +75,7 @@ class PacBioTests(PluginTestCase):
                     try:
                         rmtree(fp)
                     except Exception:
-                        # last-ditch best-effort cleanup
+                        # best-effort cleanup
                         for root, dirs, files in os.walk(fp, topdown=False):
                             for name in files:
                                 try:
@@ -173,7 +179,11 @@ class PacBioTests(PluginTestCase):
         except AssertionError:
             diff = "\n".join(
                 difflib.unified_diff(
-                    expN, obsN, fromfile="expected", tofile="observed", lineterm=""
+                    expN,
+                    obsN,
+                    fromfile="expected",
+                    tofile="observed",
+                    lineterm="",
                 )
             )
             print("\n==== Unified diff (normalized) ====\n" + diff)
@@ -222,16 +232,22 @@ class PacBioTests(PluginTestCase):
             expected_subset = [
                 "#!/bin/bash",
                 f"#SBATCH -J s{step}-{job_id}",
-                "#SBATCH -N 1",
+                f"#SBATCH -p {PARTITION}",
+                f"#SBATCH -N {NODE_COUNT}",
                 f"#SBATCH -n {nprocs}",
                 f"#SBATCH --time {wall}",
                 f"#SBATCH --mem {mem_gb}G",
-                f"#SBATCH -o {out_dir}/step-{step}/logs/%x-%A.out",
-                f"#SBATCH -e {out_dir}/step-{step}/logs/%x-%A.err",
+                (
+                    "#SBATCH -o "
+                    f"{out_dir}/step-{step}/logs/%x-%A_%a.out"
+                ),
+                (
+                    "#SBATCH -e "
+                    f"{out_dir}/step-{step}/logs/%x-%A_%a.out"
+                ),
                 f"#SBATCH --array 1-{njobs}%16",
-                "",
+                "source ~/.bashrc",
                 f"conda activate {CONDA_ENV}",
-                "",
                 f"cd {out_dir}/step-{step}",
             ]
             for line in expected_subset:
@@ -239,9 +255,7 @@ class PacBioTests(PluginTestCase):
                     self.assertIn(
                         line,
                         got,
-                        msg=(
-                            f"Missing L in s-{step} header: {line}"
-                        ),
+                        msg=(f"Missing line in step-{step} header: {line}"),
                     )
 
         # step-0
