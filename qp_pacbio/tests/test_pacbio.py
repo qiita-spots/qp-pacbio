@@ -172,7 +172,7 @@ class PacBioTests(PluginTestCase):
         return norm
 
     def _assert_equal_with_diff(self, expected_lines, observed_lines, out_dir):
-        """Assert equality and, on failure, print a unified diff (normalized)."""
+        """Assert equality print a unified diff (normalized)."""
         expN = self._normalize_lines(expected_lines, out_dir)
         obsN = self._normalize_lines(observed_lines, out_dir)
         try:
@@ -190,7 +190,7 @@ class PacBioTests(PluginTestCase):
             print("\n==== Unified diff (normalized) ====\n" + diff)
             raise
 
-    # The Actual Test 
+    # The Actual Test
     def test_pacbio_processing(self):
         params = {"artifact_id": self._insert_data()}
         job_id = "my-job-id"
