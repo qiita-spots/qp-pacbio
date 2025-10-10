@@ -26,15 +26,12 @@ from qp_pacbio.qp_pacbio import pacbio_processing
 CONDA_ENV = "qp_pacbio_2025.9"
 STEP1_NPROCS = 16
 STEP1_WALL = 1000
-STEP1_MEM_GB = 450  # generator emits 450G for step-1
+STEP1_MEM_GB = 300  # generator uses 300G for step-1
 NODE_COUNT = 1
 PARTITION = "qiita"
 
-# Order-sensitive expected template for step-1, matching your Jinja template.
-# IMPORTANT:
-# - Escape shell ${...} -> ${{...}} so .format doesn't substitute them.
-# - Escape awk braces '{print $1}' -> '{{print $1}}'.
-# - Include the blank line before hifiasm_meta (generator adds it).
+# Exact expected Step-1 script matching your template.
+# Escape ${...} -> ${{...}} and awk braces -> '{{print $1}}' etc.
 STEP_1_EXP = (
     "#!/bin/bash\n"
     "#SBATCH -J s1-{job_id}\n"
@@ -218,8 +215,19 @@ class PacBioTests(PluginTestCase):
             with open(slurm_fp, "r") as fh:
                 got = [ln.rstrip("\n") for ln in fh.readlines()]
 
-            # generator sends step-0 logs to step-1/logs/
+            # generator behavior:
+            # - step 0 logs go to step-1/logs/
+            # - step 3 uses .err for -e; others use .out
             log_step = 1 if step == 0 else step
+            err_ext = ".err" if step == 3 else ".out"
+
+            # cd location differs by step:
+            if step == 0:
+                cd_line = f"cd {out_dir}/step-0"
+            elif step in (1, 2):
+                cd_line = f"cd {out_dir}/step-1"
+            else:
+                cd_line = f"cd {out_dir}"
 
             expected_subset = [
                 "#!/bin/bash",
@@ -235,12 +243,12 @@ class PacBioTests(PluginTestCase):
                 ),
                 (
                     "#SBATCH -e "
-                    f"{out_dir}/step-{log_step}/logs/%x-%A_%a.out"
+                    f"{out_dir}/step-{log_step}/logs/%x-%A_%a{err_ext}"
                 ),
                 f"#SBATCH --array 1-{njobs}%16",
                 "source ~/.bashrc",
                 f"conda activate {CONDA_ENV}",
-                f"cd {out_dir}/step-{step}",
+                cd_line,
             ]
             for line in expected_subset:
                 with self.subTest(step=step, line=line):
