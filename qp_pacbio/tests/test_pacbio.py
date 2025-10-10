@@ -26,7 +26,7 @@ from qp_pacbio.qp_pacbio import pacbio_processing
 CONDA_ENV = "qp_pacbio_2025.9"
 STEP1_NPROCS = 16
 STEP1_WALL = 1000
-STEP1_MEM_GB = 300
+STEP1_MEM_GB = 300  # generator emits 450G for step-1
 NODE_COUNT = 1
 PARTITION = "qiita"
 
@@ -34,6 +34,7 @@ PARTITION = "qiita"
 # IMPORTANT:
 # - Escape shell ${...} -> ${{...}} so .format doesn't try to substitute.
 # - Escape awk braces '{print $1}' -> '{{print $1}}' so .format doesn't touch.
+# - Include the blank line before hifiasm_meta (generator adds it).
 STEP_1_EXP = (
     "#!/bin/bash\n"
     "#SBATCH -J s1-{job_id}\n"
@@ -56,6 +57,7 @@ STEP_1_EXP = (
     "filename=`echo $input | awk '{{print $2}}'`\n"
     "\n"
     "fn=`basename ${{filename}}`\n"
+    "\n"
     f"hifiasm_meta -t {STEP1_NPROCS} -o "
     "{out_dir}/step-1/${{sample_name}} ${{filename}}"
 )
@@ -172,7 +174,7 @@ class PacBioTests(PluginTestCase):
         return norm
 
     def _assert_equal_with_diff(self, expected_lines, observed_lines, out_dir):
-        """Assert equality print a unified diff (normalized)."""
+        """Assert equality and, on failure, print a unified diff (normalized)."""
         expN = self._normalize_lines(expected_lines, out_dir)
         obsN = self._normalize_lines(observed_lines, out_dir)
         try:
@@ -190,7 +192,7 @@ class PacBioTests(PluginTestCase):
             print("\n==== Unified diff (normalized) ====\n" + diff)
             raise
 
-    # The Actual Test
+    # ---------- The Actual Test ----------
     def test_pacbio_processing(self):
         params = {"artifact_id": self._insert_data()}
         job_id = "my-job-id"
@@ -224,12 +226,13 @@ class PacBioTests(PluginTestCase):
 
         self._assert_equal_with_diff(exp_lines, obs_lines, out_dir)
 
-        # steps: header sanity checks only
+        # ----- Other steps: header sanity checks only -----
         def assert_header(step, nprocs, wall, mem_gb):
             slurm_fp = f"{out_dir}/step-{step}/step-{step}.slurm"
             with open(slurm_fp, "r") as fh:
                 got = [ln.rstrip("\n") for ln in fh.readlines()]
 
+            # Keep lines <= 79 chars (flake8 E501) by splitting literals
             expected_subset = [
                 "#!/bin/bash",
                 f"#SBATCH -J s{step}-{job_id}",
