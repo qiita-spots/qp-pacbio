@@ -174,7 +174,7 @@ class PacBioTests(PluginTestCase):
         return norm
 
     def _assert_equal_with_diff(self, expected_lines, observed_lines, out_dir):
-        """Assert equality and, on failure, print a unified diff (normalized)."""
+        """Assert equality, print a unified diff (normalized)."""
         expN = self._normalize_lines(expected_lines, out_dir)
         obsN = self._normalize_lines(observed_lines, out_dir)
         try:
