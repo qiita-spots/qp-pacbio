@@ -30,9 +30,10 @@ STEP1_MEM_GB = 300
 NODE_COUNT = 1
 PARTITION = "qiita"
 
-# Order-sensitive expected template for step-1, matching your current Jinja
-# (see the step-1 slurm you posted). IMPORTANT: we must escape any literal
-# ${...} shell variable by doubling braces so str.format leaves them intact.
+# Order-sensitive expected template for step-1, matching your Jinja template.
+# IMPORTANT:
+# - Escape shell ${...} -> ${{...}} so .format doesn't try to substitute.
+# - Escape awk braces '{print $1}' -> '{{print $1}}' so .format doesn't touch.
 STEP_1_EXP = (
     "#!/bin/bash\n"
     "#SBATCH -J s1-{job_id}\n"
@@ -51,12 +52,12 @@ STEP_1_EXP = (
     "step=${{SLURM_ARRAY_TASK_ID}}\n"
     "input=$(head -n $step {out_dir}/sample_list.txt | tail -n 1)\n"
     "\n"
-    "sample_name=`echo $input | awk '{print $1}'`\n"
-    "filename=`echo $input | awk '{print $2}'`\n"
+    "sample_name=`echo $input | awk '{{print $1}}'`\n"
+    "filename=`echo $input | awk '{{print $2}}'`\n"
     "\n"
     "fn=`basename ${{filename}}`\n"
     f"hifiasm_meta -t {STEP1_NPROCS} -o "
-    "{{out_dir}}/step-1/${{sample_name}} ${{filename}}"
+    "{out_dir}/step-1/${{sample_name}} ${{filename}}"
 )
 
 
@@ -171,7 +172,7 @@ class PacBioTests(PluginTestCase):
         return norm
 
     def _assert_equal_with_diff(self, expected_lines, observed_lines, out_dir):
-        """Assert equality print a unified diff (normalized)."""
+        """Assert equality and, on failure, print a unified diff (normalized)."""
         expN = self._normalize_lines(expected_lines, out_dir)
         obsN = self._normalize_lines(observed_lines, out_dir)
         try:
@@ -189,7 +190,7 @@ class PacBioTests(PluginTestCase):
             print("\n==== Unified diff (normalized) ====\n" + diff)
             raise
 
-    # ---------- The Actual Test ----------
+    # The Actual Test 
     def test_pacbio_processing(self):
         params = {"artifact_id": self._insert_data()}
         job_id = "my-job-id"
@@ -223,7 +224,7 @@ class PacBioTests(PluginTestCase):
 
         self._assert_equal_with_diff(exp_lines, obs_lines, out_dir)
 
-        # ----- Other steps: header sanity checks only -----
+        # steps: header sanity checks only
         def assert_header(step, nprocs, wall, mem_gb):
             slurm_fp = f"{out_dir}/step-{step}/step-{step}.slurm"
             with open(slurm_fp, "r") as fh:
@@ -252,11 +253,11 @@ class PacBioTests(PluginTestCase):
             ]
             for line in expected_subset:
                 with self.subTest(step=step, line=line):
-                    self.assertIn(
-                        line,
-                        got,
-                        msg=(f"Missing line in step-{step} header: {line}"),
+                    msg = (
+                        "Missing line in step-{} header: {}"
+                        .format(step, line)
                     )
+                    self.assertIn(line, got, msg=msg)
 
         # step-0
         assert_header(step=0, nprocs=16, wall=1000, mem_gb=300)
