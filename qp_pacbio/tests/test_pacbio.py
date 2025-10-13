@@ -6,9 +6,6 @@
 # The full license is in the file LICENSE, distributed with this software.
 # -----------------------------------------------------------------------------
 
-import difflib
-import os
-import re
 from json import dumps
 from os import remove
 from os.path import exists, isdir, join
