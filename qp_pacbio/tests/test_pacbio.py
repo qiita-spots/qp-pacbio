@@ -127,7 +127,7 @@ class PacBioTests(PluginTestCase):
         with open(f"{out_dir}/sample_list.txt", "r") as f:
             obs_lines = f.readlines()
         self.assertEqual(2, len(obs_lines))
-
+        njobs = len(obs_lines) 
         # testing step-1
         with open(f"{out_dir}/step-1/step-1.slurm", "r") as f:
             # removing \n
