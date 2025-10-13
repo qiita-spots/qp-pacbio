@@ -5,8 +5,8 @@
 #SBATCH -n {{nprocs}}
 #SBATCH --time {{wall_time_limit}}
 #SBATCH --mem {{mem_in_gb}}G
-#SBATCH -o {{output}}/step-1/logs/%x-%A_%a.out
-#SBATCH -e {{output}}/step-1/logs/%x-%A_%a.out
+#SBATCH -o {{output}}/step-0/logs/%x-%A_%a.out
+#SBATCH -e {{output}}/step-0/logs/%x-%A_%a.out
 #SBATCH --array {{array_params}}
 
 source ~/.bashrc
