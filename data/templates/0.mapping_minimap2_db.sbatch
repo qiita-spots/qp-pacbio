@@ -22,4 +22,4 @@ filename=`echo $input | awk '{print $2}'`
 
 fn=`basename ${filename}`
 
-minimap2 -x map-hifi -t {{nprocs}} -a --secondary=no --MD --eqx -o {{output}}/step-0/${sample_name}.sam /projects/wol/qiyun/wol2/databases/minimap2/WoLr2.mmi ${filename}
+minimap2 -x map-hifi -t {{nprocs}} -a --secondary=no --MD --eqx  /projects/wol/qiyun/wol2/databases/minimap2/WoLr2.mmi ${filename} | samtools sort -@ {{nprocs}} -o {{output}}/step-1/${sample_name}_WoLr2.sorted.sam

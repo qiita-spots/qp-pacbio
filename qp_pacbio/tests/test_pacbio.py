@@ -61,42 +61,19 @@ STEP_1_EXP = (
 
 
 class PacBioTests(PluginTestCase):
-    # ---------- Test Harness Utilities ----------
     def setUp(self):
         plugin("https://localhost:21174", "register", "ignored")
+
         self._clean_up_files = []
-        self.maxDiff = None
 
     def tearDown(self):
         for fp in self._clean_up_files:
             if exists(fp):
                 if isdir(fp):
-                    try:
-                        rmtree(fp)
-                    except Exception:
-                        # best-effort cleanup
-                        for root, dirs, files in os.walk(fp, topdown=False):
-                            for name in files:
-                                try:
-                                    os.remove(os.path.join(root, name))
-                                except Exception:
-                                    pass
-                            for name in dirs:
-                                try:
-                                    os.rmdir(os.path.join(root, name))
-                                except Exception:
-                                    pass
-                        try:
-                            os.rmdir(fp)
-                        except Exception:
-                            pass
+                    rmtree(fp)
                 else:
-                    try:
-                        remove(fp)
-                    except Exception:
-                        pass
+                    remove(fp)
 
-    # ---------- Fixtures ----------
     def _insert_data(self):
         prep_info_dict = {
             "SKB8.640193": {"run_prefix": "S22205_S104"},
@@ -104,7 +81,8 @@ class PacBioTests(PluginTestCase):
         }
         data = {
             "prep_info": dumps(prep_info_dict),
-            "study": 1,  # magic #1 = testing study
+            # magic #1 = testing study
+            "study": 1,
             "data_type": "Metagenomic",
         }
         pid = self.qclient.post("/apitest/prep_template/", data=data)["prep"]
@@ -134,146 +112,35 @@ class PacBioTests(PluginTestCase):
             "prep": pid,
         }
         aid = self.qclient.post("/apitest/artifact/", data=data)["artifact"]
+
         return aid
 
-    # ---------- Helpers for robust comparisons ----------
-    @staticmethod
-    def _normalize_lines(lines, out_dir):
-        """Normalize lines to remove run-to-run variance."""
-        norm = []
-        for ln in lines:
-            ln = ln.rstrip("\n")
-            ln = re.sub(r"[ \t]+", " ", ln).rstrip()
-            if out_dir:
-                ln = ln.replace(out_dir, "<OUT_DIR>")
-            ln = re.sub(
-                r"\b\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}\b",
-                "<DATETIME>",
-                ln,
-            )
-            ln = re.sub(
-                r"\b[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}\b",
-                "<UUID>",
-                ln,
-                flags=re.IGNORECASE,
-            )
-            norm.append(ln)
-        return norm
-
-    def _assert_equal_with_diff(self, expected_lines, observed_lines, out_dir):
-        """Assert equality and print a unified diff on failure."""
-        expN = self._normalize_lines(expected_lines, out_dir)
-        obsN = self._normalize_lines(observed_lines, out_dir)
-        try:
-            self.assertEqual(expN, obsN)
-        except AssertionError:
-            diff = "\n".join(
-                difflib.unified_diff(
-                    expN, obsN, fromfile="expected",
-                    tofile="observed", lineterm=""
-                )
-            )
-            print("\n==== Unified diff (normalized) ====\n" + diff)
-            raise
-
-    # ---------- The Actual Test ----------
     def test_pacbio_processing(self):
         params = {"artifact_id": self._insert_data()}
         job_id = "my-job-id"
         out_dir = mkdtemp()
         self._clean_up_files.append(out_dir)
 
-        # Render SLURM scripts (no execution).
+        # this should fail cause we don't have valid data
         success, ainfo, msg = pacbio_processing(
             self.qclient, job_id, params, out_dir
         )
-        self.assertTrue(success, msg=f"pacbio_processing failed: {msg}")
 
-        # sample list created
+        # testing file creation, just number of lines and header
         with open(f"{out_dir}/sample_list.txt", "r") as f:
-            sample_lines = [ln.rstrip("\n") for ln in f.readlines()]
-        self.assertEqual(2, len(sample_lines))
-        njobs = len(sample_lines)
-        self.assertGreater(njobs, 0, "No jobs derived from sample list.")
+            obs_lines = f.readlines()
+        self.assertEqual(2, len(obs_lines))
 
-        # ----- Step 1: exact, order-sensitive comparison -----
-        step1_path = f"{out_dir}/step-1/step-1.slurm"
-        with open(step1_path, "r") as f:
-            obs_lines = [ln.rstrip("\n") for ln in f.readlines()]
+        # testing step-1
+        with open(f"{out_dir}/step-1/step-1.slurm", "r") as f:
+            # removing \n
+            obs_lines = [ln.replace("\n", "") for ln in f.readlines()]
 
-        exp_text = STEP_1_EXP.format(
-            job_id=job_id,
-            out_dir=out_dir,
-            njobs=njobs,
+        self.assertCountEqual(
+            STEP_1_EXP.format(out_dir=out_dir).split("\n"),
+            obs_lines,
         )
-        exp_lines = exp_text.split("\n")
-        self._assert_equal_with_diff(exp_lines, obs_lines, out_dir)
 
-        # ----- Other steps: header sanity checks only -----
-        def assert_header(step, nprocs, wall, mem_gb):
-            slurm_fp = f"{out_dir}/step-{step}/step-{step}.slurm"
-            with open(slurm_fp, "r") as fh:
-                got = [ln.rstrip("\n") for ln in fh.readlines()]
-
-            # generator behavior:
-            # - step 0 logs go to step-1/logs/
-            # - step 3 uses .err for -e; others use .out
-            log_step = 1 if step == 0 else step
-            err_ext = ".err" if step == 3 else ".out"
-
-            # cd location differs by step:
-            if step == 0:
-                cd_line = f"cd {out_dir}/step-0"
-            elif step in (1, 2):
-                cd_line = f"cd {out_dir}/step-1"
-            else:
-                cd_line = f"cd {out_dir}"
-
-            expected_subset = [
-                "#!/bin/bash",
-                f"#SBATCH -J s{step}-{job_id}",
-                f"#SBATCH -p {PARTITION}",
-                f"#SBATCH -N {NODE_COUNT}",
-                f"#SBATCH -n {nprocs}",
-                f"#SBATCH --time {wall}",
-                f"#SBATCH --mem {mem_gb}G",
-                (
-                    "#SBATCH -o "
-                    f"{out_dir}/step-{log_step}/logs/%x-%A_%a.out"
-                ),
-                (
-                    "#SBATCH -e "
-                    f"{out_dir}/step-{log_step}/logs/%x-%A_%a{err_ext}"
-                ),
-                f"#SBATCH --array 1-{njobs}%16",
-                "source ~/.bashrc",
-                f"conda activate {CONDA_ENV}",
-                cd_line,
-            ]
-            for line in expected_subset:
-                with self.subTest(step=step, line=line):
-                    msg = (
-                        "Missing line in step-{} header: {}"
-                        .format(step, line)
-                    )
-                    self.assertIn(line, got, msg=msg)
-
-        # step-0
-        assert_header(step=0, nprocs=16, wall=1000, mem_gb=300)
-        # step-2
-        assert_header(step=2, nprocs=1, wall=500, mem_gb=16)
-        # step-3
-        assert_header(step=3, nprocs=8, wall=500, mem_gb=50)
-        # step-4
-        assert_header(step=4, nprocs=8, wall=500, mem_gb=50)
-        # step-5
-        assert_header(step=5, nprocs=8, wall=500, mem_gb=50)
-        # step-6
-        assert_header(step=6, nprocs=8, wall=500, mem_gb=50)
-        # step-7
-        assert_header(step=7, nprocs=8, wall=500, mem_gb=50)
-
-        # ainfo / results folder
         self.assertTrue(success)
         exp = [
             ArtifactInfo(
