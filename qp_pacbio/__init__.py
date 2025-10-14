@@ -9,7 +9,6 @@ from qiita_client import QiitaPlugin, QiitaCommand
 from .qp_pacbio import pacbio_processing, minimap2_processing
 from .util import plugin_details
 
-__version__ = "2025.9"
 
 plugin = QiitaPlugin(**plugin_details)
 
@@ -17,7 +16,7 @@ plugin = QiitaPlugin(**plugin_details)
 # minimap2 command
 #
 
-req_params = {'input': ('artifact_id', ['per_sample_FASTQ'])}
+req_params = {'artifact_id': ('integer', ['per_sample_FASTQ'])}
 opt_params = dict()
 outputs = {
     # taxonomic

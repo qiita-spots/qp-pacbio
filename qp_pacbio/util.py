@@ -13,7 +13,7 @@ from qiita_client import QiitaClient
 
 
 plugin_details = {'name': 'qp-pacbio',
-                  'version': '2025.09',
+                  'version': '2025.9',
                   'description': 'PacBio processing'}
 
 
