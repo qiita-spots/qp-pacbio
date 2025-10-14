@@ -134,8 +134,11 @@ class PacBioTests(PluginTestCase):
             obs_lines = [ln.replace("\n", "") for ln in f.readlines()]
 
         self.assertCountEqual(
-            STEP_1_EXP.format(out_dir=out_dir, 
-            job_id=job_id, njobs=njobs).split("\n"),
+            STEP_1_EXP.format(
+                out_dir=out_dir,
+                job_id=job_id,
+                njobs=njobs,
+            ).split("\n"),
             obs_lines,
         )
 
