@@ -10,9 +10,8 @@
 #SBATCH --array {{array_params}}
 
 source ~/.bashrc
-
+set -e
 conda activate {{conda_environment}}
-
 cd {{output}}/step-1
 
 step=${SLURM_ARRAY_TASK_ID} ##1000_2, 1000_1

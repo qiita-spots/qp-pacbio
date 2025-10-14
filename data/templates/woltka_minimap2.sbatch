@@ -10,11 +10,13 @@
 #SBATCH --array {{array_params}}
 
 source ~/.bashrc
+set -e
 conda activate {{conda_environment}}
+mkdir -p {{output}}/alignments
+cd {{output}}/
+db=/projects/wol/qiyun/wol2/databases/minimap2/WoLr2.mmi
 
-
-cd {{output}}/step-0
-step=${SLURM_ARRAY_TASK_ID} ##1000_2, 1000_1
+step=${SLURM_ARRAY_TASK_ID}
 input=$(head -n $step {{output}}/sample_list.txt | tail -n 1)
 
 sample_name=`echo $input | awk '{print $1}'`
@@ -22,4 +24,9 @@ filename=`echo $input | awk '{print $2}'`
 
 fn=`basename ${filename}`
 
-minimap2 -x map-hifi -t {{nprocs}} -a --secondary=no --MD --eqx  /projects/wol/qiyun/wol2/databases/minimap2/WoLr2.mmi ${filename} | samtools sort -@ {{nprocs}} -o {{output}}/step-1/${sample_name}_WoLr2.sorted.sam
+minimap2 -x map-hifi -t {{nprocs}} -a \
+       --secondary=no --MD --eqx ${db} \
+       ${filename} | \
+   samtools sort -@ {{nprocs}} - | \
+   awk 'BEGIN { FS=OFS="\t" } /^@/ { print; next } { $10="*"; $11="*" } 1' | \
+   xz -1 -T1 > {{output}}/alignments/${sample_name}.sam.xz

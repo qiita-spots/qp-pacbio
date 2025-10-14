@@ -10,6 +10,7 @@
 #SBATCH --array {{array_params}}
 
 source ~/.bashrc
+set -e
 conda activate {{conda_environment}}
 cd {{output}}
 
