@@ -6,37 +6,54 @@
 # The full license is in the file LICENSE, distributed with this software.
 # -----------------------------------------------------------------------------
 
-from unittest import main
-from qiita_client import ArtifactInfo
-from qiita_client.testing import PluginTestCase
+from json import dumps
 from os import remove
 from os.path import exists, isdir, join
+from shutil import copyfile, rmtree
 from tempfile import mkdtemp
-from shutil import rmtree, copyfile
-from json import dumps
+from unittest import main
+
+from qiita_client import ArtifactInfo
+from qiita_client.testing import PluginTestCase
 
 from qp_pacbio import plugin
 from qp_pacbio.qp_pacbio import pacbio_processing
 
+# Keep these in sync with your generator defaults
+CONDA_ENV = "qp_pacbio_2025.9"
+STEP1_NPROCS = 16
+STEP1_WALL = 1000
+STEP1_MEM_GB = 300  # generator uses 300G for step-1
+NODE_COUNT = 1
+PARTITION = "qiita"
 
+# Exact expected Step-1 script matching your template.
+# Escape ${...} -> ${{...}} and awk braces -> '{{print $1}}' etc.
 STEP_1_EXP = (
     "#!/bin/bash\n"
-    "#SBATCH -J s1-my-job-id\n"
-    "#SBATCH -N 1\n"
-    "#SBATCH -n 32\n"
-    "#SBATCH --time 1000\n"
-    "#SBATCH --mem 300G\n"
-    "#SBATCH -o {out_dir}/step-1/logs/%x-%A.out\n"
-    "#SBATCH -e {out_dir}/step-1/logs/%x-%A.err\n"
-    "#SBATCH --array 1:2%16\n"
-    "\n"
-    "conda activate qp_pacbio_2025.9\n"
+    "#SBATCH -J s1-{job_id}\n"
+    f"#SBATCH -p {PARTITION}\n"
+    f"#SBATCH -N {NODE_COUNT}\n"
+    f"#SBATCH -n {STEP1_NPROCS}\n"
+    f"#SBATCH --time {STEP1_WALL}\n"
+    f"#SBATCH --mem {STEP1_MEM_GB}G\n"
+    "#SBATCH -o {out_dir}/step-1/logs/%x-%A_%a.out\n"
+    "#SBATCH -e {out_dir}/step-1/logs/%x-%A_%a.out\n"
+    "#SBATCH --array 1-{njobs}%16\n"
+    "source ~/.bashrc\n"
+    f"conda activate {CONDA_ENV}\n"
     "\n"
     "cd {out_dir}/step-1\n"
     "step=${{SLURM_ARRAY_TASK_ID}}\n"
-    "input=$(head -n $step {out_dir}/file_list.txt | tail -n 1)\n"
-    "fn=`basename ${{input}}`\n"
-    "hifiasm_meta -t 60 -o {out_dir}/step-1/${{fn}} ${{input}}"
+    "input=$(head -n $step {out_dir}/sample_list.txt | tail -n 1)\n"
+    "\n"
+    "sample_name=`echo $input | awk '{{print $1}}'`\n"
+    "filename=`echo $input | awk '{{print $2}}'`\n"
+    "\n"
+    "fn=`basename ${{filename}}`\n"
+    "\n"
+    f"hifiasm_meta -t {STEP1_NPROCS} -o "
+    "{out_dir}/step-1/${{sample_name}} ${{filename}}"
 )
 
 
@@ -110,14 +127,18 @@ class PacBioTests(PluginTestCase):
         with open(f"{out_dir}/sample_list.txt", "r") as f:
             obs_lines = f.readlines()
         self.assertEqual(2, len(obs_lines))
-
+        njobs = len(obs_lines)
         # testing step-1
         with open(f"{out_dir}/step-1/step-1.slurm", "r") as f:
             # removing \n
             obs_lines = [ln.replace("\n", "") for ln in f.readlines()]
 
         self.assertCountEqual(
-            STEP_1_EXP.format(out_dir=out_dir).split("\n"),
+            STEP_1_EXP.format(
+                out_dir=out_dir,
+                job_id=job_id,
+                njobs=njobs,
+            ).split("\n"),
             obs_lines,
         )
 

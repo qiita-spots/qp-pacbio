@@ -9,6 +9,8 @@
 #SBATCH -e {{output}}/step-5/logs/%x-%A_%a.out
 #SBATCH --array {{array_params}}
 
+source ~/.bashrc
+
 conda activate {{conda_environment}}
 cd {{output}}
 
@@ -33,4 +35,4 @@ Fasta_to_Contig2Bin.sh -i ./concoct_bins -e fa > ${sample_name}.concoct.tsv
 Fasta_to_Contig2Bin.sh -i ./maxbin2_bins -e fa > ${sample_name}.maxbin2.tsv
 Fasta_to_Contig2Bin.sh -i ./metabat2_bins -e fa > ${sample_name}.metabat2.tsv
 
-DAS_Tool --bins=${sample_name}.concoct.tsv,${sample_name}.maxbin2.tsv,${sample_name}.metabat2.tsv --contigs={{output}}/step-2/${sample_name}.noLCG.fa --outputbasename={{output}}/${folder}/${sample_name}/${sample_name} --labels=CONCOCT,MaxBin,MetaBAT --threads={{nprocs}} --search_engine=diamond --dbDirectory=${DAS_db} --write_bins
+DAS_Tool --bins=${sample_name}.concoct.tsv,${sample_name}.maxbin2.tsv,${sample_name}.metabat2.tsv --contigs={{output}}/step-2/${sample_name}_noLCG.fa --outputbasename={{output}}/${folder}/${sample_name}/${sample_name} --labels=CONCOCT,MaxBin,MetaBAT --threads={{nprocs}} --search_engine=diamond --dbDirectory=${DAS_db} --write_bins

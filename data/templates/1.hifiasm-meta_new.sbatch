@@ -8,7 +8,7 @@
 #SBATCH -o {{output}}/step-1/logs/%x-%A_%a.out
 #SBATCH -e {{output}}/step-1/logs/%x-%A_%a.out
 #SBATCH --array {{array_params}}
-
+source ~/.bashrc
 conda activate {{conda_environment}}
 
 cd {{output}}/step-1

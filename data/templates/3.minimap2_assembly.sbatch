@@ -9,7 +9,7 @@
 #SBATCH -e {{output}}/step-3/logs/%x-%A_%a.err
 #SBATCH --array {{array_params}}
 
-
+source ~/.bashrc
 conda activate {{conda_environment}}
 cd {{output}}
 
