@@ -76,6 +76,8 @@ def _write_slurm(path, template, **ctx):
     with open(out_fp, mode="w", encoding="utf-8") as f:
         f.write(rendered)
 
+    return out_fp
+
 
 def pacbio_generate_templates(out_dir, job_id, njobs):
     """Generate Slurm submission templates for PacBio processing.
@@ -410,7 +412,7 @@ def generate_minimap2_processing(qclient, job_id, out_dir, parameters):
 
     jinja_env = Environment(loader=KISSLoader("../data/templates"))
     minimap2_template = jinja_env.get_template("woltka_minimap2.sbatch")
-    _write_slurm(
+    minimap2_script = _write_slurm(
         f'{out_dir}/minimap2',
         minimap2_template,
         conda_environment=CONDA_ENV,
@@ -424,7 +426,7 @@ def generate_minimap2_processing(qclient, job_id, out_dir, parameters):
     )
     minimap2_merge_template = jinja_env.get_template(
         "woltka_minimap2_merge.sbatch")
-    _write_slurm(
+    minimap2_merge_script = _write_slurm(
         f'{out_dir}/merge',
         minimap2_merge_template,
         conda_environment=CONDA_ENV,
@@ -436,4 +438,4 @@ def generate_minimap2_processing(qclient, job_id, out_dir, parameters):
         mem_in_gb=120
     )
 
-    return minimap2_template, minimap2_merge_template
+    return minimap2_script, minimap2_merge_script
