@@ -5,8 +5,8 @@
 #SBATCH -n {{nprocs}}
 #SBATCH --time {{wall_time_limit}}
 #SBATCH --mem {{mem_in_gb}}G
-#SBATCH -o {{output}}/step-0/logs/%x-%A_%a.out
-#SBATCH -e {{output}}/step-0/logs/%x-%A_%a.out
+#SBATCH -o {{output}}/minimap2/logs/%x-%A_%a.out
+#SBATCH -e {{output}}/minimap2/logs/%x-%A_%a.out
 #SBATCH --array {{array_params}}
 
 source ~/.bashrc
@@ -14,7 +14,7 @@ set -e
 conda activate {{conda_environment}}
 mkdir -p {{output}}/alignments
 cd {{output}}/
-db=/projects/wol/qiyun/wol2/databases/minimap2/WoLr2.mmi
+db=/ddn_scratch/qiita_t/working_dir/tmp/db/WoLr2.mmi
 
 step=${SLURM_ARRAY_TASK_ID}
 input=$(head -n $step {{output}}/sample_list.txt | tail -n 1)
