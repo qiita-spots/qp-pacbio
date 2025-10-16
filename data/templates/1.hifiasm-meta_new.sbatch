@@ -8,10 +8,12 @@
 #SBATCH -o {{output}}/step-1/logs/%x-%A_%a.out
 #SBATCH -e {{output}}/step-1/logs/%x-%A_%a.out
 #SBATCH --array {{array_params}}
-source ~/.bashrc
-conda activate {{conda_environment}}
 
+source ~/.bashrc
+set -e
+conda activate {{conda_environment}}
 cd {{output}}/step-1
+
 step=${SLURM_ARRAY_TASK_ID}
 input=$(head -n $step {{output}}/sample_list.txt | tail -n 1)
 

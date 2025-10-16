@@ -11,9 +11,8 @@
 
 
 source ~/.bashrc
-
+set -e
 conda activate {{conda_environment}}
-
 cd {{output}}
 
 step=${SLURM_ARRAY_TASK_ID}

@@ -8,6 +8,9 @@
 # -----------------------------------------------------------------------------
 import click
 from qp_pacbio import plugin
+from qp_pacbio.qp_pacbio import generate_minimap2_processing
+from qp_pacbio.util import client_connect
+from subprocess import run, PIPE
 
 
 @click.command()
@@ -32,4 +35,23 @@ def config(env_script, ca_cert):
 @click.argument("output_dir", required=True)
 def execute(url, job_id, output_dir):
     """Executes the task given by job_id and puts the output in output_dir"""
-    plugin(url, job_id, output_dir)
+    if 'register' in job_id:
+        plugin(url, job_id, output_dir)
+    else:
+        qclient = client_connect(url)
+        job_info = qclient.get_job_info(job_id)
+        parameters = job_info['parameters']
+
+        main_fp, merge_fp = generate_minimap2_processing(
+                qclient, job_id, output_dir, parameters)
+
+        # Submitting jobs and returning id
+        main_job = run(['sbatch', main_fp], stdout=PIPE)
+        main_job_id = main_job.stdout.decode('utf8').split()[-1]
+        merge_job = run(['sbatch', '-d', f'afterok:{main_job_id}',
+                         merge_fp], stdout=PIPE)
+        merge_job_id = merge_job.stdout.decode('utf8').split()[-1]
+        print(f'{main_job_id}, {merge_job_id}')
+
+        qclient.update_job_step(
+            job_id, "Step 2 of 4: Aligning sequences")

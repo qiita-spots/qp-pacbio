@@ -6,12 +6,8 @@
 #
 # The full license is in the file LICENSE, distributed with this software.
 # -----------------------------------------------------------------------------
-from configparser import ConfigParser
-from os import environ
-from os.path import expanduser, join
-
-from qp_pacbio.qp_pacbio import generate_sample_list, generate_templates
-from qiita_client import QiitaClient
+from qp_pacbio.qp_pacbio import generate_sample_list, pacbio_generate_templates
+from qp_pacbio.util import client_connect
 
 import click
 from subprocess import run
@@ -26,28 +22,6 @@ plugin_details = {
 QIITA_URL = "https://qiita.ucsd.edu"
 
 
-def client_connect(url):
-    name = plugin_details["name"]
-    version = plugin_details["version"]
-
-    config = ConfigParser()
-    conf_dir = environ.get(
-        "QIITA_PLUGINS_DIR", join(expanduser("~"), ".qiita_plugins")
-    )
-    conf_fp = join(conf_dir, f"{name}_{version}.conf")
-
-    with open(conf_fp, "r", encoding="utf-8") as conf_file:
-        config.read_file(conf_file)
-
-    qclient = QiitaClient(
-        url,
-        config.get("oauth2", "CLIENT_ID"),
-        config.get("oauth2", "CLIENT_SECRET"),
-        config.get("oauth2", "SERVER_CERT"),
-    )
-    return qclient
-
-
 @click.command()
 @click.option("--artifact_id", help="artifact id", required=True)
 @click.option("--out_dir", help="output directory", required=True)
@@ -59,10 +33,9 @@ def runner(artifact_id, out_dir, job_id):
 
     qclient = client_connect(QIITA_URL)
     njobs = generate_sample_list(qclient, artifact_id, out_dir)
-    generate_templates(out_dir, job_id, njobs)
+    pacbio_generate_templates(out_dir, job_id, njobs)
     print(qclient.artifact_and_preparation_files(artifact_id))
 
-    jid0 = sbatch(["sbatch", "--parsable", f"{out_dir}/step-0/step-0.slurm"])
     jid1 = sbatch(["sbatch", "--parsable", f"{out_dir}/step-1/step-1.slurm"])
     jid2 = sbatch(
         [
@@ -119,7 +92,7 @@ def runner(artifact_id, out_dir, job_id):
         ]
     )
 
-    submitted = [jid0, jid1, jid2, jid3, jid4, jid5, jid6, jid7]
+    submitted = [jid1, jid2, jid3, jid4, jid5, jid6, jid7]
     print("Submitted jobs: " + ", ".join(submitted))
 
 
