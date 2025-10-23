@@ -20,10 +20,14 @@ sample_name=`echo $input | awk '{print $1}'`
 filename=`echo $input | awk '{print $2}'`
 
 fn=`basename ${filename}`
+
+# updating the GUI when task 1 runs
+if [[ "$step" == "1" ]]; then
+    python -c "from qp_pacbio.util import client_connect; qclient = client_connect('{{url}}'); qclient.update_job_step('{{qjid}}', 'Running step 5: ${SLURM_ARRAY_JOB_ID}')"
+fi
+
 folder=step-5/${sample_name}_refinement
-
 mkdir -p ${folder}
-
 
 ### make sure qiita have access to this DB path. Otherwise copy the folder to qiita-owned folders
 DAS_db=/ddn_scratch/qiita/databases/qp-pacbio/DAS_Tool/db/
