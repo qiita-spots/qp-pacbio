@@ -46,7 +46,7 @@ def execute(url, job_id, output_dir):
         job_info = qclient.get_job_info(job_id)
         parameters = job_info["parameters"]
         command = job_info["command"]
-        artifact_id = parameters["artifact_id"]
+        artifact_id = parameters["artifact"]
 
         if command == "Woltka v0.1.7, minimap2":
             main_fp, merge_fp = generate_minimap2_processing(

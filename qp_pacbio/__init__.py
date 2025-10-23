@@ -16,17 +16,17 @@ plugin = QiitaPlugin(**plugin_details)
 # minimap2 command
 #
 
-req_params = {'artifact_id': ('integer', ['per_sample_FASTQ'])}
+req_params = {"artifact": ("integer", ["per_sample_FASTQ"])}
 opt_params = dict()
 outputs = {
     # taxonomic
-    'Per genome Predictions': 'BIOM',
-    'Per gene Predictions': 'BIOM',
+    "Per genome Predictions": "BIOM",
+    "Per gene Predictions": "BIOM",
     # functional
-    'KEGG Ontology (KO)': 'BIOM',
-    'KEGG Enzyme (EC)': 'BIOM',
-    'KEGG Pathway': 'BIOM',
-    }
+    "KEGG Ontology (KO)": "BIOM",
+    "KEGG Enzyme (EC)": "BIOM",
+    "KEGG Pathway": "BIOM",
+}
 dflt_param_set = dict()
 
 minimap2_cmd = QiitaCommand(
@@ -45,7 +45,7 @@ plugin.register_command(minimap2_cmd)
 #
 
 req_params = {
-    "artifact_id": ("integer", [None]),
+    "artifact": ("integer", ["per_sample_FASTQ"]),
 }
 opt_params = dict()
 outputs = {"output": "job-output-folder"}
