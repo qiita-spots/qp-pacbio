@@ -85,7 +85,7 @@ def execute(url, job_id, output_dir):
                 task = run(cmd, stdout=PIPE)
                 jid = task.stdout.decode("utf8").split()[-1]
                 all_jids.append(jid)
-            print(", ".merge(all_jids))
+            print(", ".join(all_jids))
         else:
             # this should never happen but rather have it
             raise ValueError(f"{command} not implemented!")

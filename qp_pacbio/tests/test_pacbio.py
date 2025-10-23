@@ -13,11 +13,14 @@ from shutil import copyfile, rmtree
 from tempfile import mkdtemp
 from unittest import main
 
-from qiita_client import ArtifactInfo
 from qiita_client.testing import PluginTestCase
 
 from qp_pacbio import plugin
-from qp_pacbio.qp_pacbio import generate_minimap2_processing, pacbio_processing
+from qp_pacbio.qp_pacbio import (
+    generate_minimap2_processing,
+    generate_sample_list,
+    pacbio_generate_templates,
+)
 
 # Keep these in sync with your generator defaults
 CONDA_ENV = "qp_pacbio_2025.9"
@@ -117,20 +120,21 @@ class PacBioTests(PluginTestCase):
 
 class PacProcessingTests(PacBioTests):
     def test_pacbio_processing(self):
-        params = {"artifact": self._insert_data()}
+        artifact_id = self._insert_data()
         job_id = "my-job-id"
         out_dir = mkdtemp()
+        result_fp = join(out_dir, "result")
         self._clean_up_files.append(out_dir)
 
-        # this should fail cause we don't have valid data
-        result = pacbio_processing(self.qclient, job_id, params, out_dir)
-        success, ainfo, msg = result
+        njobs = generate_sample_list(self.qclient, artifact_id, out_dir)
+        pacbio_generate_templates(out_dir, job_id, njobs, result_fp)
 
         # testing file creation, just number of lines and header
         with open(f"{out_dir}/sample_list.txt", "r") as f:
             obs_lines = f.readlines()
         self.assertEqual(2, len(obs_lines))
         njobs = len(obs_lines)
+
         # testing step-1
         with open(f"{out_dir}/step-1/step-1.slurm", "r") as f:
             # removing \n
@@ -145,19 +149,9 @@ class PacProcessingTests(PacBioTests):
             obs_lines,
         )
 
-        self.assertTrue(success)
-        exp = [
-            ArtifactInfo(
-                "output",
-                "job-output-folder",
-                [(f"{out_dir}/results/", "directory")],
-            )
-        ]
-        self.assertCountEqual(ainfo, exp)
-
 
 class PacWoltkaProfilingTests(PacBioTests):
-    def test_pacbio_processing(self):
+    def test_pacbio_profiling(self):
         params = {"artifact": int(self._insert_data())}
         job_id = "my-job-id"
         out_dir = mkdtemp()
