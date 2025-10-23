@@ -267,7 +267,7 @@ class PacWoltkaProfilingTests(PacBioTests):
             "\n",
             (
                 f'find {out_dir}/coverages/ -iname "*.cov" '
-                + "> {{out_dir}}/cov_files.txt\n"
+                + f"> {out_dir}/cov_files.txt\n"
             ),
             f"micov consolidate --paths {out_dir}/cov_files.txt "
             f"--lengths ${{len_map}} --output {out_dir}/coverages.tgz\n",
