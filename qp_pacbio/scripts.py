@@ -64,11 +64,13 @@ def execute(url, job_id, output_dir):
             print(f"{main_job_id}, {merge_job_id}")
             qclient.update_job_step(job_id, "Step 2 of 4: Aligning sequences")
         elif command == "PacBio processing":
-            result_fp = join(output_dir, "results")
-            makedirs(result_fp, exist_ok=True)
+            frp = join(output_dir, "results")
+            makedirs(frp, exist_ok=True)
+
+            qclient.update_job_step(job_id, "Generating commands.")
 
             njobs = generate_sample_list(qclient, artifact_id, output_dir)
-            pacbio_generate_templates(output_dir, job_id, njobs, result_fp)
+            pacbio_generate_templates(output_dir, job_id, njobs, frp, url)
 
             total_steps = 7
 

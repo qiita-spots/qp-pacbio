@@ -57,6 +57,13 @@ STEP_1_EXP = (
     "\n"
     "fn=`basename ${{filename}}`\n"
     "\n"
+    'if [[ "$step" == "1" ]]; then\n'
+    '    python -c "from qp_pacbio.util import client_connect; '
+    "qclient = client_connect('http://test.test.org'); "
+    "qclient.update_job_step('my-job-id', 'Running step 1: "
+    "${SLURM_ARRAY_JOB_ID}')\"\n"
+    "fi\n"
+    "\n"
     f"hifiasm_meta -t {STEP1_NPROCS} -o "
     "{out_dir}/step-1/${{sample_name}} ${{filename}}"
 )
@@ -127,7 +134,9 @@ class PacProcessingTests(PacBioTests):
         self._clean_up_files.append(out_dir)
 
         njobs = generate_sample_list(self.qclient, artifact_id, out_dir)
-        pacbio_generate_templates(out_dir, job_id, njobs, result_fp)
+        pacbio_generate_templates(
+            out_dir, job_id, njobs, result_fp, "http://test.test.org"
+        )
 
         # testing file creation, just number of lines and header
         with open(f"{out_dir}/sample_list.txt", "r") as f:

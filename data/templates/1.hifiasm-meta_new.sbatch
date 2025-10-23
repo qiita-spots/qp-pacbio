@@ -22,4 +22,8 @@ filename=`echo $input | awk '{print $2}'`
 
 fn=`basename ${filename}`
 
+if [[ "$step" == "1" ]]; then
+    python -c "from qp_pacbio.util import client_connect; qclient = client_connect('{{url}}'); qclient.update_job_step('{{qjid}}', 'Running step 1: ${SLURM_ARRAY_JOB_ID}')"
+fi
+
 hifiasm_meta -t {{nprocs}} -o {{output}}/step-1/${sample_name} ${filename}

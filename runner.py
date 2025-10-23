@@ -37,7 +37,7 @@ def runner(artifact_id, out_dir, job_id):
     njobs = generate_sample_list(qclient, artifact_id, out_dir)
     result_fp = join(out_dir, "results")
     makedirs(result_fp, exist_ok=True)
-    pacbio_generate_templates(out_dir, job_id, njobs)
+    pacbio_generate_templates(out_dir, job_id, njobs, QIITA_URL)
     print(qclient.artifact_and_preparation_files(artifact_id))
 
     jid1 = sbatch(["sbatch", "--parsable", f"{out_dir}/step-1/step-1.slurm"])

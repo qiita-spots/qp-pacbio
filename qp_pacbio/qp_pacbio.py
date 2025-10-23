@@ -79,7 +79,7 @@ def _write_slurm(path, template, **ctx):
     return out_fp
 
 
-def pacbio_generate_templates(out_dir, job_id, njobs, result_fp):
+def pacbio_generate_templates(out_dir, job_id, njobs, result_fp, url):
     """Generate Slurm submission templates for PacBio processing.
 
     Parameters
@@ -92,6 +92,8 @@ def pacbio_generate_templates(out_dir, job_id, njobs, result_fp):
         Number of array tasks/jobs.
     result_fp : str, filepath
         Folder where the final results will be stored.
+    url : str
+        URL to update the status of the jobs
     """
     jinja_env = Environment(loader=KISSLoader("../data/templates"))
 
@@ -108,6 +110,8 @@ def pacbio_generate_templates(out_dir, job_id, njobs, result_fp):
         wall_time_limit=MAX_WALL_1000,
         mem_in_gb=300,
         array_params=f"1-{njobs}%16",
+        url=url,
+        qjid=job_id,
     )
 
     # Step 2
@@ -124,6 +128,8 @@ def pacbio_generate_templates(out_dir, job_id, njobs, result_fp):
         mem_in_gb=16,
         array_params=f"1-{njobs}%16",
         result_fp=result_fp,
+        url=url,
+        qjid=job_id,
     )
 
     # Step 3
@@ -139,6 +145,8 @@ def pacbio_generate_templates(out_dir, job_id, njobs, result_fp):
         wall_time_limit=MAX_WALL_500,
         mem_in_gb=50,
         array_params=f"1-{njobs}%16",
+        url=url,
+        qjid=job_id,
     )
 
     # Step 4
@@ -154,6 +162,8 @@ def pacbio_generate_templates(out_dir, job_id, njobs, result_fp):
         wall_time_limit=MAX_WALL_500,
         mem_in_gb=50,
         array_params=f"1-{njobs}%16",
+        url=url,
+        qjid=job_id,
     )
 
     # Step 5 (long filename isolated in T5_NAME)
@@ -169,6 +179,8 @@ def pacbio_generate_templates(out_dir, job_id, njobs, result_fp):
         wall_time_limit=MAX_WALL_500,
         mem_in_gb=50,
         array_params=f"1-{njobs}%16",
+        url=url,
+        qjid=job_id,
     )
 
     # Step 6
@@ -185,6 +197,8 @@ def pacbio_generate_templates(out_dir, job_id, njobs, result_fp):
         mem_in_gb=50,
         array_params=f"1-{njobs}%16",
         result_fp=result_fp,
+        url=url,
+        qjid=job_id,
     )
 
     # Step 7
@@ -201,6 +215,8 @@ def pacbio_generate_templates(out_dir, job_id, njobs, result_fp):
         mem_in_gb=50,
         array_params=f"1-{njobs}%16",
         result_fp=result_fp,
+        url=url,
+        qjid=job_id,
     )
 
 
@@ -322,10 +338,10 @@ def minimap2_processing(qclient, job_id, parameters, out_dir):
         )
 
     bioms = [
-        (f"{out_dir}/per-gene.biom", "per_genePer gene Predictions"),
-        (f"{out_dir}/ko.biom", "koKEGG Ontology (KO)"),
-        (f"{out_dir}/ec.biom", "ecKEGG Enzyme (EC)"),
-        (f"{out_dir}/pathway.biom", "pathwayKEGG Pathway"),
+        (f"{out_dir}/per-gene.biom", "per_gene", "Per gene Predictions"),
+        (f"{out_dir}/ko.biom", "ko", "KEGG Ontology (KO)"),
+        (f"{out_dir}/ec.biom", "ec", "KEGG Enzyme (EC)"),
+        (f"{out_dir}/pathway.biom", "pathway", "KEGG Pathway"),
     ]
 
     for fb, fn, bn in bioms:
