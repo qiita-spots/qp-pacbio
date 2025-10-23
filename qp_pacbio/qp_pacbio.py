@@ -79,7 +79,7 @@ def _write_slurm(path, template, **ctx):
     return out_fp
 
 
-def pacbio_generate_templates(out_dir, job_id, njobs):
+def pacbio_generate_templates(out_dir, job_id, njobs, result_fp):
     """Generate Slurm submission templates for PacBio processing.
 
     Parameters
@@ -90,6 +90,8 @@ def pacbio_generate_templates(out_dir, job_id, njobs):
         Qiita job id.
     njobs : int
         Number of array tasks/jobs.
+    result_fp : str, filepath
+        Folder where the final results will be stored.
     """
     jinja_env = Environment(loader=KISSLoader("../data/templates"))
 
@@ -121,6 +123,7 @@ def pacbio_generate_templates(out_dir, job_id, njobs):
         wall_time_limit=MAX_WALL_500,
         mem_in_gb=16,
         array_params=f"1-{njobs}%16",
+        result_fp=result_fp,
     )
 
     # Step 3
@@ -181,6 +184,7 @@ def pacbio_generate_templates(out_dir, job_id, njobs):
         wall_time_limit=MAX_WALL_500,
         mem_in_gb=50,
         array_params=f"1-{njobs}%16",
+        result_fp=result_fp,
     )
 
     # Step 7
@@ -196,6 +200,7 @@ def pacbio_generate_templates(out_dir, job_id, njobs):
         wall_time_limit=MAX_WALL_500,
         mem_in_gb=50,
         array_params=f"1-{njobs}%16",
+        result_fp=result_fp,
     )
 
 
@@ -251,62 +256,12 @@ def pacbio_processing(qclient, job_id, parameters, out_dir):
     bool, list, str
         Results tuple for Qiita.
     """
-    results_fp = join(out_dir, "results")
-    makedirs(results_fp, exist_ok=True)
+    result_fp = join(out_dir, "results")
+    makedirs(result_fp, exist_ok=True)
 
-    qclient.update_job_step(
-        job_id,
-        "Step 1 of 3: Collecting info and generating submission",
-    )
-    artifact_id = parameters["artifact"]
-
-    njobs = generate_sample_list(qclient, artifact_id, out_dir)
-
-    qclient.update_job_step(
-        job_id,
-        "Step 2 of 3: Creating submission templates",
-    )
-    pacbio_generate_templates(out_dir, job_id, njobs)
-
-    # If/when you enable submission, capture Slurm job IDs and thread them:
-    # jid0 = qclient.submit_job(f"{out_dir}/step-0/step-0.slurm")
-    # jid1 = qclient.submit_job(f"{out_dir}/step-1/step-1.slurm")
-    # For now, keep None to avoid F821.
-    jid1 = None
-
-    # Re-render Step 2 with dependency on the matching task of Step 1.
-    jinja_env = Environment(loader=KISSLoader("../data/templates"))
-    template2 = jinja_env.get_template("2.get-circular-genomes.sbatch")
-
-    cdir2 = join(out_dir, "step-2")
-    makedirs(cdir2, exist_ok=True)
-
-    dep = None
-    if jid1:
-        # Example: chain with Slurm's aftercorr
-        dep = f"aftercorr:{jid1}"
-
-    rendered = template2.render(
-        conda_environment=CONDA_ENV,
-        output=out_dir,
-        job_name=f"s2-{job_id}",
-        node_count=1,
-        nprocs=1,
-        wall_time_limit=MAX_WALL_500,
-        mem_in_gb=16,
-        # Use "1:{njobs}%16" if template expects a colon separator.
-        array_params=f"1-{njobs}%16",
-        dependency=dep,
-    )
-    with open(join(cdir2, "step-2.slurm"), "w", encoding="utf-8") as f:
-        f.write(rendered)
-
-    qclient.update_job_step(job_id, "Step 3 of 3: Running commands")
-
-    # TODO: wait for jobs to finish (future)
     qclient.update_job_step(job_id, "Commands finished")
 
-    paths = [(f"{results_fp}/", "directory")]
+    paths = [(f"{result_fp}/", "directory")]
     return (
         True,
         [ArtifactInfo("output", "job-output-folder", paths)],

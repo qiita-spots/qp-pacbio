@@ -7,6 +7,8 @@
 # The full license is in the file LICENSE, distributed with this software.
 # -----------------------------------------------------------------------------
 import click
+from os import makedirs
+from os.path import join
 from qp_pacbio import plugin
 from qp_pacbio.qp_pacbio import (
     generate_minimap2_processing,
@@ -62,8 +64,11 @@ def execute(url, job_id, output_dir):
             print(f"{main_job_id}, {merge_job_id}")
             qclient.update_job_step(job_id, "Step 2 of 4: Aligning sequences")
         elif command == "PacBio processing":
+            result_fp = join(output_dir, "results")
+            makedirs(result_fp, exist_ok=True)
+
             njobs = generate_sample_list(qclient, artifact_id, output_dir)
-            pacbio_generate_templates(output_dir, job_id, njobs)
+            pacbio_generate_templates(output_dir, job_id, njobs, result_fp)
 
             total_steps = 7
 
