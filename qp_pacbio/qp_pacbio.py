@@ -258,7 +258,7 @@ def pacbio_processing(qclient, job_id, parameters, out_dir):
         job_id,
         "Step 1 of 3: Collecting info and generating submission",
     )
-    artifact_id = parameters["artifact_id"]
+    artifact_id = parameters["artifact"]
 
     njobs = generate_sample_list(qclient, artifact_id, out_dir)
 
@@ -336,9 +336,9 @@ def minimap2_processing(qclient, job_id, parameters, out_dir):
     qclient.update_job_step(job_id, "Commands finished")
 
     def _coverage_copy(dest):
-        fp_coverages = join(out_dir, 'coverages.tgz')
+        fp_coverages = join(out_dir, "coverages.tgz")
         mkdir(dest)
-        dest = join(dest, 'coverages.tgz')
+        dest = join(dest, "coverages.tgz")
         copy2(fp_coverages, dest)
 
         return dest
@@ -346,36 +346,53 @@ def minimap2_processing(qclient, job_id, parameters, out_dir):
     errors = []
     ainfo = []
 
-    fp_biom = f'{out_dir}/none.biom'
-    fp_alng = f'{out_dir}/alignment.tar'
+    fp_biom = f"{out_dir}/none.biom"
+    fp_alng = f"{out_dir}/alignment.tar"
     if exists(fp_biom) and exists(fp_alng):
-        ainfo.append(ArtifactInfo('Per genome Predictions', 'BIOM', [
-            (fp_biom, 'biom'), (fp_alng, 'log'),
-            (_coverage_copy(f'{out_dir}/none/'), 'plain_text')]))
+        ainfo.append(
+            ArtifactInfo(
+                "Per genome Predictions",
+                "BIOM",
+                [
+                    (fp_biom, "biom"),
+                    (fp_alng, "log"),
+                    (_coverage_copy(f"{out_dir}/none/"), "plain_text"),
+                ],
+            )
+        )
     else:
-        errors.append('Table none/per-genome was not created, please contact '
-                      'qiita.help@gmail.com for more information')
+        errors.append(
+            "Table none/per-genome was not created, please contact "
+            "qiita.help@gmail.com for more information"
+        )
 
     bioms = [
-        (f'{out_dir}/per-gene.biom', 'per_gene' 'Per gene Predictions'),
-        (f'{out_dir}/ko.biom', 'ko' 'KEGG Ontology (KO)'),
-        (f'{out_dir}/ec.biom', 'ec' 'KEGG Enzyme (EC)'),
-        (f'{out_dir}/pathway.biom', 'pathway' 'KEGG Pathway'),
+        (f"{out_dir}/per-gene.biom", "per_genePer gene Predictions"),
+        (f"{out_dir}/ko.biom", "koKEGG Ontology (KO)"),
+        (f"{out_dir}/ec.biom", "ecKEGG Enzyme (EC)"),
+        (f"{out_dir}/pathway.biom", "pathwayKEGG Pathway"),
     ]
 
     for fb, fn, bn in bioms:
         if exists(fb):
-            ainfo.append(ArtifactInfo(bn, 'BIOM', [
-                (fb, 'biom'),
-                (_coverage_copy(f'{out_dir}/{fn}/'), 'plain_text')]))
+            files = [(fb, "biom")]
+            files.append((_coverage_copy(f"{out_dir}/{fn}/"), "plain_text"))
+            ainfo.append(
+                ArtifactInfo(
+                    bn,
+                    "BIOM",
+                    files,
+                )
+            )
         else:
-            errors.append(f'Table "{bn}" was not created, please contact '
-                          'qiita.help@gmail.com for more information')
+            errors.append(
+                f'Table "{bn}" was not created, please contact '
+                "qiita.help@gmail.com for more information"
+            )
 
     if errors:
-        return False, ainfo, '\n'.join(errors)
+        return False, ainfo, "\n".join(errors)
     else:
-
         return True, ainfo, ""
 
 
@@ -399,9 +416,10 @@ def generate_minimap2_processing(qclient, job_id, out_dir, parameters):
         Returns the two filepaths of the slurm scripts
     """
     qclient.update_job_step(
-        job_id, "Step 1 of 4: Collecting info and generating submission")
+        job_id, "Step 1 of 4: Collecting info and generating submission"
+    )
 
-    artifact_id = parameters["artifact_id"]
+    artifact_id = parameters["artifact"]
 
     njobs = generate_sample_list(qclient, artifact_id, out_dir)
 
@@ -411,9 +429,10 @@ def generate_minimap2_processing(qclient, job_id, out_dir, parameters):
     )
 
     jinja_env = Environment(loader=KISSLoader("../data/templates"))
-    minimap2_template = jinja_env.get_template("woltka_minimap2.sbatch")
+    GT = jinja_env.get_template
+    minimap2_template = GT("woltka_minimap2.sbatch")
     minimap2_script = _write_slurm(
-        f'{out_dir}/minimap2',
+        f"{out_dir}/minimap2",
         minimap2_template,
         conda_environment=CONDA_ENV,
         output=out_dir,
@@ -424,10 +443,9 @@ def generate_minimap2_processing(qclient, job_id, out_dir, parameters):
         mem_in_gb=120,
         array_params=f"1-{njobs}%16",
     )
-    minimap2_merge_template = jinja_env.get_template(
-        "woltka_minimap2_merge.sbatch")
+    minimap2_merge_template = GT("woltka_minimap2_merge.sbatch")
     minimap2_merge_script = _write_slurm(
-        f'{out_dir}/merge',
+        f"{out_dir}/merge",
         minimap2_merge_template,
         conda_environment=CONDA_ENV,
         output=out_dir,
@@ -435,7 +453,7 @@ def generate_minimap2_processing(qclient, job_id, out_dir, parameters):
         node_count=1,
         nprocs=16,
         wall_time_limit=MAX_WALL_1000,
-        mem_in_gb=120
+        mem_in_gb=120,
     )
 
     return minimap2_script, minimap2_merge_script
