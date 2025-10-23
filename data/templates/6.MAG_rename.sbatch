@@ -27,9 +27,10 @@ cd {{output}}/step-5/${sample_name}_refinement/${sample_name}/${sample_name}_DAS
 
 for f in *.fa; do
     k=${f##*/}
-    a="${filename}_${k}"
+    a="${sample_name}_${k}"
     mv "$k" "$a"
 done
-cp ./${filename}*.fa step-6/${sample_name}_MAG_rename
+cp ${sample_name}*.fa {{output}}/step-6/${sample_name}_MAG_rename
 
 #### where do we store the MAGS?
+cat {{output}}/step-6/${sample_name}_MAG_rename/${sample_name}*.fa | gz > {{result_fp}}/${sample_name}/${sample_name}.MAG.fna.gz

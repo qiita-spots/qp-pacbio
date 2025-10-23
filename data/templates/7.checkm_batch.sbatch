@@ -28,5 +28,9 @@ mkdir -p ${folder}
 cd step-5/${sample_name}_refinement/${sample_name}/${sample_name}_DASTool_bins
 
 checkm lineage_wf ./ ./checkm_out -x fa -t 8 --tab_table -f ../${sample_name}_checkm_table.txt --pplacer_threads 2
+rm -rf ./checkm_out
 cd ../
 cp ${sample_name}_checkm_table.txt {{output}}/step-7/checkm_out/
+
+### Save results
+cat {{output}}/step-7/checkm_out/${sample_name}*.txt | gz > {{result_fp}}/${sample_name}/${sample_name}.txt.gz
