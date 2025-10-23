@@ -61,7 +61,7 @@ STEP_1_EXP = (
     '    python -c "from qp_pacbio.util import client_connect; '
     "qclient = client_connect('http://test.test.org'); "
     "qclient.update_job_step('my-job-id', 'Running step 1: "
-    "${SLURM_ARRAY_JOB_ID}')\"\n"
+    "${{SLURM_ARRAY_JOB_ID}}')\"\n"
     "fi\n"
     "\n"
     f"hifiasm_meta -t {STEP1_NPROCS} -o "
