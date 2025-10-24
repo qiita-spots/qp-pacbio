@@ -51,4 +51,9 @@ seqkit grep -v -f circular_id.txt ../${sample_name}_all_contigs.fa > ../${sample
 ### save to results folder
 mkdir -p {{result_fp}}/${sample_name}/
 cat {{output}}/step-2/${sample_name}_noLCG.fa | gzip > {{result_fp}}/${sample_name}/${sample_name}.noLCG.fna.gz
-cat {{output}}/step-2/${sample_name}_split/${sample_name}*.fa | gzip > {{result_fp}}/${sample_name}/${sample_name}.LCG.fna.gz
+
+shopt -s nullglob
+FILES=({{output}}/step-2/${sample_name}_split/*."fa")
+if (( ${#FILES[@]} > 0 )); then
+   cat {{output}}/step-2/${sample_name}_split/${sample_name}*.fa | gzip > {{result_fp}}/${sample_name}/${sample_name}.LCG.fna.gz
+fi
