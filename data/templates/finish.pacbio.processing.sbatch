@@ -14,6 +14,6 @@ set -e
 conda activate {{conda_environment}}
 cd {{output}}
 
-tar zcvf results/logs.tgz */logs/
+tar zcvf results/logs.tgz step*/logs/
 
 finish_woltka {{url}} {{qjid}} {{output}}

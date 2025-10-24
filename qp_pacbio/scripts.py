@@ -91,9 +91,9 @@ def execute(url, job_id, output_dir):
             cmd = [
                 "sbatch",
                 "--parsable",
-                f"{output_dir}/finish/finish.slurm",
                 "--dependency",
-                f"aftercorr:{all_jids[-1]}",
+                f"afterok:{all_jids[-1]}",
+                f"{output_dir}/finish/finish.slurm",
             ]
             task = run(cmd, stdout=PIPE)
             jid = task.stdout.decode("utf8").split()[-1]
