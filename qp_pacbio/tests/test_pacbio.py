@@ -57,6 +57,7 @@ STEP_1_EXP = (
     "\n"
     "fn=`basename ${{filename}}`\n"
     "\n"
+    "# updating the GUI when task 1 runs\n"
     'if [[ "$step" == "1" ]]; then\n'
     '    python -c "from qp_pacbio.util import client_connect; '
     "qclient = client_connect('http://test.test.org'); "

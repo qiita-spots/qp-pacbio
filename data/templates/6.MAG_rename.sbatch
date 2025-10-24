@@ -39,4 +39,4 @@ done
 cp ${sample_name}*.fa {{output}}/step-6/${sample_name}_MAG_rename
 
 #### where do we store the MAGS?
-cat {{output}}/step-6/${sample_name}_MAG_rename/${sample_name}*.fa | gz > {{result_fp}}/${sample_name}/${sample_name}.MAG.fna.gz
+cat {{output}}/step-6/${sample_name}_MAG_rename/${sample_name}*.fa | gzip > {{result_fp}}/${sample_name}/${sample_name}.MAG.fna.gz
