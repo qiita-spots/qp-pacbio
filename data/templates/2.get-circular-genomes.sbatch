@@ -54,6 +54,8 @@ cat {{output}}/step-2/${sample_name}_noLCG.fa | gzip > {{result_fp}}/${sample_na
 
 shopt -s nullglob
 FILES=({{output}}/step-2/${sample_name}_split/*."fa")
+{% raw %}
 if (( ${#FILES[@]} > 0 )); then
+{% endraw %}
    cat {{output}}/step-2/${sample_name}_split/${sample_name}*.fa | gzip > {{result_fp}}/${sample_name}/${sample_name}.LCG.fna.gz
 fi
