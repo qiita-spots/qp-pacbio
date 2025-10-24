@@ -223,7 +223,7 @@ class PacWoltkaProfilingTests(PacBioTests):
             "#SBATCH --time 1000\n",
             "#SBATCH --mem 120G\n",
             f"#SBATCH -o {out_dir}/merge/logs/%x-%A_%a.out\n",
-            f"#SBATCH -e {out_dir}/merge/logs/%x-%A_%a.out\n",
+            f"#SBATCH -e {out_dir}/merge/logs/%x-%A_%a.err\n",
             "\n",
             "source ~/.bashrc\n",
             "set -e\n",

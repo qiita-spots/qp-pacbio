@@ -38,5 +38,9 @@ for f in *.fa; do
 done
 cp ${sample_name}*.fa {{output}}/step-6/${sample_name}_MAG_rename
 
-#### where do we store the MAGS?
-cat {{output}}/step-6/${sample_name}_MAG_rename/${sample_name}*.fa | gzip > {{result_fp}}/${sample_name}/${sample_name}.MAG.fna.gz
+mag_folder={{result_fp}}/${sample_name}/MAG/
+mkdir -p ${mag_folder}
+for f in `ls step-6/${sample_name}_MAG_rename/${sample_name}*.fa`; do
+    sn=`basename ${f}`;
+    cat $f | gzip > ${mag_folder}/${sn/.fa/.fna}.gz;
+done
