@@ -41,7 +41,7 @@ STEP_1_EXP = (
     f"#SBATCH --time {STEP1_WALL}\n"
     f"#SBATCH --mem {STEP1_MEM_GB}G\n"
     "#SBATCH -o {out_dir}/step-1/logs/%x-%A_%a.out\n"
-    "#SBATCH -e {out_dir}/step-1/logs/%x-%A_%a.out\n"
+    "#SBATCH -e {out_dir}/step-1/logs/%x-%A_%a.err\n"
     "#SBATCH --array 1-{njobs}%16\n"
     "\n"
     "source ~/.bashrc\n"
@@ -185,7 +185,7 @@ class PacWoltkaProfilingTests(PacBioTests):
             "#SBATCH --time 1000\n",
             "#SBATCH --mem 120G\n",
             f"#SBATCH -o {out_dir}/minimap2/logs/%x-%A_%a.out\n",
-            f"#SBATCH -e {out_dir}/minimap2/logs/%x-%A_%a.out\n",
+            f"#SBATCH -e {out_dir}/minimap2/logs/%x-%A_%a.err\n",
             "#SBATCH --array 1-2%16\n",
             "\n",
             "source ~/.bashrc\n",

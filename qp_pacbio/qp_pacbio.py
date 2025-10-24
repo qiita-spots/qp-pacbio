@@ -219,6 +219,22 @@ def pacbio_generate_templates(out_dir, job_id, njobs, result_fp, url):
         qjid=job_id,
     )
 
+    # finish command - letting qiita know that we are done
+    finish = jinja_env.get_template("finish.pacbio.processing.sbatch")
+    _write_slurm(
+        join(out_dir, "finish"),
+        finish,
+        conda_environment=CONDA_ENV,
+        output=out_dir,
+        job_name=f"f-{job_id}",
+        node_count=1,
+        nprocs=1,
+        wall_time_limit=MAX_WALL_500,
+        mem_in_gb=50,
+        url=url,
+        qjid=job_id,
+    )
+
 
 def generate_sample_list(qclient, artifact_id, out_dir):
     """Create sample_list.txt of sample names/files for slurm arrays.
