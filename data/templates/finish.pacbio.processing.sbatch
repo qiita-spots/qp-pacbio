@@ -16,4 +16,4 @@ cd {{output}}
 
 tar zcvf results/logs.tgz step*/logs/
 
-finish_woltka {{url}} {{qjid}} {{output}}
+finish_qp_pacbio {{url}} {{qjid}} {{output}}

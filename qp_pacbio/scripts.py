@@ -108,6 +108,6 @@ def execute(url, job_id, output_dir):
 @click.argument("url", required=True)
 @click.argument("job_id", required=True)
 @click.argument("output_dir", required=True)
-def finish_pacbio(url, job_id, output_dir):
+def finish_qp_pacbio(url, job_id, output_dir):
     """Executes the task given by job_id and puts the output in output_dir"""
     plugin(url, job_id, output_dir)

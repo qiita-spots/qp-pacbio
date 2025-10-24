@@ -46,3 +46,4 @@ dependencies = [
 [project.scripts]
 configure_qp_pacbio = "qp_pacbio.scripts:config"
 start_qp_pacbio = "qp_pacbio.scripts:execute"
+finish_qp_pacbio = "qp_pacbio.scripts:finish_qp_pacbio"
