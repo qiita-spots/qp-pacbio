@@ -14,13 +14,10 @@ set -e
 conda activate {{conda_environment}}
 cd {{output}}/step-1
 
-step=${SLURM_ARRAY_TASK_ID} ##1000_2, 1000_1
-
+step=${SLURM_ARRAY_TASK_ID}
 input=$(head -n $step {{output}}/sample_list.txt | tail -n 1)
-
 sample_name=`echo $input | awk '{print $1}'`
 filename=`echo $input | awk '{print $2}'`
-
 fn=`basename ${filename}`
 
 # updating the GUI when task 1 runs
@@ -50,7 +47,7 @@ seqkit grep -v -f circular_id.txt ../${sample_name}_all_contigs.fa > ../${sample
 
 lcg_folder={{result_fp}}/${sample_name}/LCG/
 mkdir -p ${lcg_folder}
-for f in `ls step-2/${sample_name}_split/*.fa`; do
+for f in `ls {{output}}/step-2/${sample_name}_split/*.fa`; do
     sn=`basename ${f/_circ/}`;
     sn=${sn/part_/};
     cat $f | gzip > ${lcg_folder}/${sn/.fa/.fna}.gz;

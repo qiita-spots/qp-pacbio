@@ -40,7 +40,7 @@ cp ${sample_name}*.fa {{output}}/step-6/${sample_name}_MAG_rename
 
 mag_folder={{result_fp}}/${sample_name}/MAG/
 mkdir -p ${mag_folder}
-for f in `ls step-6/${sample_name}_MAG_rename/${sample_name}*.fa`; do
+for f in `ls {{output}}/step-6/${sample_name}_MAG_rename/${sample_name}*.fa`; do
     sn=`basename ${f}`;
     cat $f | gzip > ${mag_folder}/${sn/.fa/.fna}.gz;
 done
