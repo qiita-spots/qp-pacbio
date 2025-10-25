@@ -13,11 +13,14 @@ from shutil import copyfile, rmtree
 from tempfile import mkdtemp
 from unittest import main
 
-from qiita_client import ArtifactInfo
 from qiita_client.testing import PluginTestCase
 
 from qp_pacbio import plugin
-from qp_pacbio.qp_pacbio import generate_minimap2_processing, pacbio_processing
+from qp_pacbio.qp_pacbio import (
+    generate_minimap2_processing,
+    generate_sample_list,
+    pacbio_generate_templates,
+)
 
 # Keep these in sync with your generator defaults
 CONDA_ENV = "qp_pacbio_2025.9"
@@ -38,7 +41,7 @@ STEP_1_EXP = (
     f"#SBATCH --time {STEP1_WALL}\n"
     f"#SBATCH --mem {STEP1_MEM_GB}G\n"
     "#SBATCH -o {out_dir}/step-1/logs/%x-%A_%a.out\n"
-    "#SBATCH -e {out_dir}/step-1/logs/%x-%A_%a.out\n"
+    "#SBATCH -e {out_dir}/step-1/logs/%x-%A_%a.err\n"
     "#SBATCH --array 1-{njobs}%16\n"
     "\n"
     "source ~/.bashrc\n"
@@ -53,6 +56,14 @@ STEP_1_EXP = (
     "filename=`echo $input | awk '{{print $2}}'`\n"
     "\n"
     "fn=`basename ${{filename}}`\n"
+    "\n"
+    "# updating the GUI when task 1 runs\n"
+    'if [[ "$step" == "1" ]]; then\n'
+    '    python -c "from qp_pacbio.util import client_connect; '
+    "qclient = client_connect('http://test.test.org'); "
+    "qclient.update_job_step('my-job-id', 'Running step 1: "
+    "${{SLURM_ARRAY_JOB_ID}}')\"\n"
+    "fi\n"
     "\n"
     f"hifiasm_meta -t {STEP1_NPROCS} -o "
     "{out_dir}/step-1/${{sample_name}} ${{filename}}"
@@ -117,14 +128,15 @@ class PacBioTests(PluginTestCase):
 
 class PacProcessingTests(PacBioTests):
     def test_pacbio_processing(self):
-        params = {"artifact_id": self._insert_data()}
+        artifact_id = self._insert_data()
         job_id = "my-job-id"
         out_dir = mkdtemp()
+        result_fp = join(out_dir, "result")
         self._clean_up_files.append(out_dir)
 
-        # this should fail cause we don't have valid data
-        success, ainfo, msg = pacbio_processing(
-            self.qclient, job_id, params, out_dir
+        njobs = generate_sample_list(self.qclient, artifact_id, out_dir)
+        pacbio_generate_templates(
+            out_dir, job_id, njobs, result_fp, "http://test.test.org"
         )
 
         # testing file creation, just number of lines and header
@@ -132,6 +144,7 @@ class PacProcessingTests(PacBioTests):
             obs_lines = f.readlines()
         self.assertEqual(2, len(obs_lines))
         njobs = len(obs_lines)
+
         # testing step-1
         with open(f"{out_dir}/step-1/step-1.slurm", "r") as f:
             # removing \n
@@ -146,106 +159,98 @@ class PacProcessingTests(PacBioTests):
             obs_lines,
         )
 
-        self.assertTrue(success)
-        exp = [
-            ArtifactInfo(
-                "output",
-                "job-output-folder",
-                [(f"{out_dir}/results/", "directory")],
-            )
-        ]
-        self.assertCountEqual(ainfo, exp)
-
 
 class PacWoltkaProfilingTests(PacBioTests):
-    def test_pacbio_processing(self):
-        params = {"artifact_id": int(self._insert_data())}
+    def test_pacbio_profiling(self):
+        params = {"artifact": int(self._insert_data())}
         job_id = "my-job-id"
         out_dir = mkdtemp()
         self._clean_up_files.append(out_dir)
 
         # this should fail cause we don't have valid data
         main_fp, merge_fp = generate_minimap2_processing(
-                self.qclient, job_id, out_dir, params)
-        with open(main_fp, 'r') as f:
+            self.qclient, job_id, out_dir, params
+        )
+        with open(main_fp, "r") as f:
             obs_main = f.readlines()
-        with open(merge_fp, 'r') as f:
+        with open(merge_fp, "r") as f:
             obs_merge = f.readlines()
 
         exp_main = [
-            '#!/bin/bash\n',
-            '#SBATCH -J m2_my-job-id\n',
-            '#SBATCH -p qiita\n',
-            '#SBATCH -N 1\n',
-            '#SBATCH -n 16\n',
-            '#SBATCH --time 1000\n',
-            '#SBATCH --mem 120G\n',
-            f'#SBATCH -o {out_dir}/minimap2/logs/%x-%A_%a.out\n',
-            f'#SBATCH -e {out_dir}/minimap2/logs/%x-%A_%a.out\n',
-            '#SBATCH --array 1-2%16\n',
-            '\n',
-            'source ~/.bashrc\n',
-            'set -e\n',
-            'conda activate qp_pacbio_2025.9\n',
-            f'mkdir -p {out_dir}/alignments\n',
-            f'cd {out_dir}/\n',
-            'db=/ddn_scratch/qiita_t/working_dir/tmp/db/WoLr2.mmi\n',
-            '\n',
-            'step=${SLURM_ARRAY_TASK_ID}\n',
-            f'input=$(head -n $step {out_dir}/sample_list.txt | tail -n 1)\n',
-            '\n',
+            "#!/bin/bash\n",
+            "#SBATCH -J m2_my-job-id\n",
+            "#SBATCH -p qiita\n",
+            "#SBATCH -N 1\n",
+            "#SBATCH -n 16\n",
+            "#SBATCH --time 1000\n",
+            "#SBATCH --mem 120G\n",
+            f"#SBATCH -o {out_dir}/minimap2/logs/%x-%A_%a.out\n",
+            f"#SBATCH -e {out_dir}/minimap2/logs/%x-%A_%a.err\n",
+            "#SBATCH --array 1-2%16\n",
+            "\n",
+            "source ~/.bashrc\n",
+            "set -e\n",
+            "conda activate qp_pacbio_2025.9\n",
+            f"mkdir -p {out_dir}/alignments\n",
+            f"cd {out_dir}/\n",
+            "db=/ddn_scratch/qiita_t/working_dir/tmp/db/WoLr2.mmi\n",
+            "\n",
+            "step=${SLURM_ARRAY_TASK_ID}\n",
+            f"input=$(head -n $step {out_dir}/sample_list.txt | tail -n 1)\n",
+            "\n",
             "sample_name=`echo $input | awk '{print $1}'`\n",
             "filename=`echo $input | awk '{print $2}'`\n",
-            '\n',
-            'fn=`basename ${filename}`\n',
-            '\n',
-            'minimap2 -x map-hifi -t 16 -a \\\n',
-            '       --secondary=no --MD --eqx ${db} \\\n',
-            '       ${filename} | \\\n',
-            '   samtools sort -@ 16 - | \\\n',
+            "\n",
+            "fn=`basename ${filename}`\n",
+            "\n",
+            "minimap2 -x map-hifi -t 16 -a \\\n",
+            "       --secondary=no --MD --eqx ${db} \\\n",
+            "       ${filename} | \\\n",
+            "   samtools sort -@ 16 - | \\\n",
             '   awk \'BEGIN { FS=OFS="\\t" } /^@/ { print; next } '
             '{ $10="*"; $11="*" } 1\' | \\\n',
-            f'   xz -1 -T1 > {out_dir}/alignments/${{sample_name}}.sam.xz']
+            f"   xz -1 -T1 > {out_dir}/alignments/${{sample_name}}.sam.xz",
+        ]
         self.assertEqual(obs_main, exp_main)
 
-        db_path = '/projects/wol/qiyun/wol2/databases/minimap2'
+        db_path = "/projects/wol/qiyun/wol2/databases/minimap2"
         exp_merge = [
-            '#!/bin/bash\n',
-            '#SBATCH -J me_my-job-id\n',
-            '#SBATCH -p qiita\n',
-            '#SBATCH -N 1\n',
-            '#SBATCH -n 16\n',
-            '#SBATCH --time 1000\n',
-            '#SBATCH --mem 120G\n',
-            f'#SBATCH -o {out_dir}/merge/logs/%x-%A_%a.out\n',
-            f'#SBATCH -e {out_dir}/merge/logs/%x-%A_%a.out\n',
-            '\n',
-            'source ~/.bashrc\n',
-            'set -e\n',
-            'conda activate qp_pacbio_2025.9\n',
-            f'cd {out_dir}/\n',
-            f'tax={db_path}/WoLr2.tax\n',
-            f'coords={db_path}/WoLr2.coords\n',
-            f'len_map={db_path}/WoLr2/length.map\n',
-            f'functional_dir={db_path}/WoLr2/\n',
-            '\n',
-            f'mkdir -p {out_dir}/coverages/\n',
-            '\n',
-            'for f in `ls alignments/*.sam.xz`; do\n',
-            '    sn=`basename ${f/.sam.xz/}`;\n',
-            f'    of={out_dir}/bioms/${{sn}};\n',
-            '    mkdir -p ${of};\n',
+            "#!/bin/bash\n",
+            "#SBATCH -J me_my-job-id\n",
+            "#SBATCH -p qiita\n",
+            "#SBATCH -N 1\n",
+            "#SBATCH -n 16\n",
+            "#SBATCH --time 1000\n",
+            "#SBATCH --mem 120G\n",
+            f"#SBATCH -o {out_dir}/merge/logs/%x-%A_%a.out\n",
+            f"#SBATCH -e {out_dir}/merge/logs/%x-%A_%a.err\n",
+            "\n",
+            "source ~/.bashrc\n",
+            "set -e\n",
+            "conda activate qp_pacbio_2025.9\n",
+            f"cd {out_dir}/\n",
+            f"tax={db_path}/WoLr2.tax\n",
+            f"coords={db_path}/WoLr2.coords\n",
+            f"len_map={db_path}/WoLr2/length.map\n",
+            f"functional_dir={db_path}/WoLr2/\n",
+            "\n",
+            f"mkdir -p {out_dir}/coverages/\n",
+            "\n",
+            "for f in `ls alignments/*.sam.xz`; do\n",
+            "    sn=`basename ${f/.sam.xz/}`;\n",
+            f"    of={out_dir}/bioms/${{sn}};\n",
+            "    mkdir -p ${of};\n",
             '    echo "woltka classify -i ${f} -o ${of}/none.biom '
-            '--no-demux --lineage ${tax} '
+            "--no-demux --lineage ${tax} "
             f'--rank none --outcov {out_dir}/coverages/";\n',
             '    echo "woltka classify -i ${f} -o ${of}/per-gene.biom '
             '--no-demux -c ${coords}";\n',
-            'done | parallel -j 1\n',
-            'wait\n',
-            '\n',
-            'for f in `ls bioms/*/per-gene.biom`; do\n',
-            '    dn=`dirname ${f}`;\n',
-            '    sn=`basename ${sn}`;\n',
+            "done | parallel -j 1\n",
+            "wait\n",
+            "\n",
+            "for f in `ls bioms/*/per-gene.biom`; do\n",
+            "    dn=`dirname ${f}`;\n",
+            "    sn=`basename ${sn}`;\n",
             '    echo "woltka collapse -i ${f} -m ${functional_dir}/'
             'orf-to-ko.map.xz -o ${dn}/ko.biom; " \\\n',
             '        "woltka collapse -i ${dn}/ko.biom -m ${functional_dir}/'
@@ -253,24 +258,27 @@ class PacWoltkaProfilingTests(PacBioTests):
             '        "woltka collapse -i ${dn}/ko.biom -m ${functional_dir}/'
             'ko-to-reaction.map -o ${dn}/reaction.biom; " \\\n',
             '        "woltka collapse -i ${dn}/reaction.biom -m '
-            '${functional_dir}/reaction-to-module.map -o '
+            "${functional_dir}/reaction-to-module.map -o "
             '${dn}/module.biom; " \\\n',
             '        "woltka collapse -i ${dn}/module.biom -m '
-            '${functional_dir}/module-to-pathway.map '
+            "${functional_dir}/module-to-pathway.map "
             '-o ${dn}/pathway.biom;"\n',
-            'done | parallel -j 1\n',
-            'wait\n',
-            '\n',
-            '# MISSING:\n',
-            '# merge bioms!\n',
-            '\n',
-            f'find {out_dir}/coverages/ -iname "*.cov" > '
-            f'{out_dir}/cov_files.txt\n',
-            f'micov consolidate --paths {out_dir}/cov_files.txt '
-            f'--lengths ${{len_map}} --output {out_dir}/coverages.tgz\n',
-            '\n',
-            'cd alignments\n',
-            'tar -cvf ../alignments.tar *.sam.xz']
+            "done | parallel -j 1\n",
+            "wait\n",
+            "\n",
+            "# MISSING:\n",
+            "# merge bioms!\n",
+            "\n",
+            (
+                f'find {out_dir}/coverages/ -iname "*.cov" '
+                + f"> {out_dir}/cov_files.txt\n"
+            ),
+            f"micov consolidate --paths {out_dir}/cov_files.txt "
+            f"--lengths ${{len_map}} --output {out_dir}/coverages.tgz\n",
+            "\n",
+            "cd alignments\n",
+            "tar -cvf ../alignments.tar *.sam.xz",
+        ]
         self.assertEqual(obs_merge, exp_merge)
 
 

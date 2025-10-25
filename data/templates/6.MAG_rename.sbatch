@@ -6,7 +6,7 @@
 #SBATCH --time {{wall_time_limit}}
 #SBATCH --mem {{mem_in_gb}}G
 #SBATCH -o {{output}}/step-6/logs/%x-%A_%a.out
-#SBATCH -e {{output}}/step-6/logs/%x-%A_%a.out
+#SBATCH -e {{output}}/step-6/logs/%x-%A_%a.err
 #SBATCH --array {{array_params}}
 
 source ~/.bashrc
@@ -20,6 +20,12 @@ sample_name=`echo $input | awk '{print $1}'`
 filename=`echo $input | awk '{print $2}'`
 
 fn=`basename ${filename}`
+
+# updating the GUI when task 1 runs
+if [[ "$step" == "1" ]]; then
+    python -c "from qp_pacbio.util import client_connect; qclient = client_connect('{{url}}'); qclient.update_job_step('{{qjid}}', 'Running step 6: ${SLURM_ARRAY_JOB_ID}')"
+fi
+
 folder=step-6/${sample_name}_MAG_rename
 mkdir -p ${folder}
 
@@ -32,5 +38,9 @@ for f in *.fa; do
 done
 cp ${sample_name}*.fa {{output}}/step-6/${sample_name}_MAG_rename
 
-#### where do we store the MAGS?
-cat {{output}}/step-6/${sample_name}_MAG_rename/${sample_name}*.fa | gz > {{result_fp}}/${sample_name}/${sample_name}.MAG.fna.gz
+mag_folder={{result_fp}}/${sample_name}/MAG/
+mkdir -p ${mag_folder}
+for f in `ls {{output}}/step-6/${sample_name}_MAG_rename/${sample_name}*.fa`; do
+    sn=`basename ${f}`;
+    cat $f | gzip > ${mag_folder}/${sn/.fa/.fna}.gz;
+done

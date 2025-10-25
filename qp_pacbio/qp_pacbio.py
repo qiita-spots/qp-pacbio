@@ -79,7 +79,7 @@ def _write_slurm(path, template, **ctx):
     return out_fp
 
 
-def pacbio_generate_templates(out_dir, job_id, njobs):
+def pacbio_generate_templates(out_dir, job_id, njobs, result_fp, url):
     """Generate Slurm submission templates for PacBio processing.
 
     Parameters
@@ -90,6 +90,10 @@ def pacbio_generate_templates(out_dir, job_id, njobs):
         Qiita job id.
     njobs : int
         Number of array tasks/jobs.
+    result_fp : str, filepath
+        Folder where the final results will be stored.
+    url : str
+        URL to update the status of the jobs
     """
     jinja_env = Environment(loader=KISSLoader("../data/templates"))
 
@@ -106,6 +110,8 @@ def pacbio_generate_templates(out_dir, job_id, njobs):
         wall_time_limit=MAX_WALL_1000,
         mem_in_gb=300,
         array_params=f"1-{njobs}%16",
+        url=url,
+        qjid=job_id,
     )
 
     # Step 2
@@ -121,6 +127,9 @@ def pacbio_generate_templates(out_dir, job_id, njobs):
         wall_time_limit=MAX_WALL_500,
         mem_in_gb=16,
         array_params=f"1-{njobs}%16",
+        result_fp=result_fp,
+        url=url,
+        qjid=job_id,
     )
 
     # Step 3
@@ -136,6 +145,8 @@ def pacbio_generate_templates(out_dir, job_id, njobs):
         wall_time_limit=MAX_WALL_500,
         mem_in_gb=50,
         array_params=f"1-{njobs}%16",
+        url=url,
+        qjid=job_id,
     )
 
     # Step 4
@@ -151,6 +162,8 @@ def pacbio_generate_templates(out_dir, job_id, njobs):
         wall_time_limit=MAX_WALL_500,
         mem_in_gb=50,
         array_params=f"1-{njobs}%16",
+        url=url,
+        qjid=job_id,
     )
 
     # Step 5 (long filename isolated in T5_NAME)
@@ -166,6 +179,8 @@ def pacbio_generate_templates(out_dir, job_id, njobs):
         wall_time_limit=MAX_WALL_500,
         mem_in_gb=50,
         array_params=f"1-{njobs}%16",
+        url=url,
+        qjid=job_id,
     )
 
     # Step 6
@@ -181,6 +196,9 @@ def pacbio_generate_templates(out_dir, job_id, njobs):
         wall_time_limit=MAX_WALL_500,
         mem_in_gb=50,
         array_params=f"1-{njobs}%16",
+        result_fp=result_fp,
+        url=url,
+        qjid=job_id,
     )
 
     # Step 7
@@ -196,6 +214,25 @@ def pacbio_generate_templates(out_dir, job_id, njobs):
         wall_time_limit=MAX_WALL_500,
         mem_in_gb=50,
         array_params=f"1-{njobs}%16",
+        result_fp=result_fp,
+        url=url,
+        qjid=job_id,
+    )
+
+    # finish command - letting qiita know that we are done
+    finish = jinja_env.get_template("finish.pacbio.processing.sbatch")
+    _write_slurm(
+        join(out_dir, "finish"),
+        finish,
+        conda_environment=CONDA_ENV,
+        output=out_dir,
+        job_name=f"f-{job_id}",
+        node_count=1,
+        nprocs=1,
+        wall_time_limit=MAX_WALL_500,
+        mem_in_gb=50,
+        url=url,
+        qjid=job_id,
     )
 
 
@@ -251,62 +288,12 @@ def pacbio_processing(qclient, job_id, parameters, out_dir):
     bool, list, str
         Results tuple for Qiita.
     """
-    results_fp = join(out_dir, "results")
-    makedirs(results_fp, exist_ok=True)
+    result_fp = join(out_dir, "results")
+    makedirs(result_fp, exist_ok=True)
 
-    qclient.update_job_step(
-        job_id,
-        "Step 1 of 3: Collecting info and generating submission",
-    )
-    artifact_id = parameters["artifact_id"]
-
-    njobs = generate_sample_list(qclient, artifact_id, out_dir)
-
-    qclient.update_job_step(
-        job_id,
-        "Step 2 of 3: Creating submission templates",
-    )
-    pacbio_generate_templates(out_dir, job_id, njobs)
-
-    # If/when you enable submission, capture Slurm job IDs and thread them:
-    # jid0 = qclient.submit_job(f"{out_dir}/step-0/step-0.slurm")
-    # jid1 = qclient.submit_job(f"{out_dir}/step-1/step-1.slurm")
-    # For now, keep None to avoid F821.
-    jid1 = None
-
-    # Re-render Step 2 with dependency on the matching task of Step 1.
-    jinja_env = Environment(loader=KISSLoader("../data/templates"))
-    template2 = jinja_env.get_template("2.get-circular-genomes.sbatch")
-
-    cdir2 = join(out_dir, "step-2")
-    makedirs(cdir2, exist_ok=True)
-
-    dep = None
-    if jid1:
-        # Example: chain with Slurm's aftercorr
-        dep = f"aftercorr:{jid1}"
-
-    rendered = template2.render(
-        conda_environment=CONDA_ENV,
-        output=out_dir,
-        job_name=f"s2-{job_id}",
-        node_count=1,
-        nprocs=1,
-        wall_time_limit=MAX_WALL_500,
-        mem_in_gb=16,
-        # Use "1:{njobs}%16" if template expects a colon separator.
-        array_params=f"1-{njobs}%16",
-        dependency=dep,
-    )
-    with open(join(cdir2, "step-2.slurm"), "w", encoding="utf-8") as f:
-        f.write(rendered)
-
-    qclient.update_job_step(job_id, "Step 3 of 3: Running commands")
-
-    # TODO: wait for jobs to finish (future)
     qclient.update_job_step(job_id, "Commands finished")
 
-    paths = [(f"{results_fp}/", "directory")]
+    paths = [(f"{result_fp}/", "directory")]
     return (
         True,
         [ArtifactInfo("output", "job-output-folder", paths)],
@@ -336,9 +323,9 @@ def minimap2_processing(qclient, job_id, parameters, out_dir):
     qclient.update_job_step(job_id, "Commands finished")
 
     def _coverage_copy(dest):
-        fp_coverages = join(out_dir, 'coverages.tgz')
+        fp_coverages = join(out_dir, "coverages.tgz")
         mkdir(dest)
-        dest = join(dest, 'coverages.tgz')
+        dest = join(dest, "coverages.tgz")
         copy2(fp_coverages, dest)
 
         return dest
@@ -346,36 +333,53 @@ def minimap2_processing(qclient, job_id, parameters, out_dir):
     errors = []
     ainfo = []
 
-    fp_biom = f'{out_dir}/none.biom'
-    fp_alng = f'{out_dir}/alignment.tar'
+    fp_biom = f"{out_dir}/none.biom"
+    fp_alng = f"{out_dir}/alignment.tar"
     if exists(fp_biom) and exists(fp_alng):
-        ainfo.append(ArtifactInfo('Per genome Predictions', 'BIOM', [
-            (fp_biom, 'biom'), (fp_alng, 'log'),
-            (_coverage_copy(f'{out_dir}/none/'), 'plain_text')]))
+        ainfo.append(
+            ArtifactInfo(
+                "Per genome Predictions",
+                "BIOM",
+                [
+                    (fp_biom, "biom"),
+                    (fp_alng, "log"),
+                    (_coverage_copy(f"{out_dir}/none/"), "plain_text"),
+                ],
+            )
+        )
     else:
-        errors.append('Table none/per-genome was not created, please contact '
-                      'qiita.help@gmail.com for more information')
+        errors.append(
+            "Table none/per-genome was not created, please contact "
+            "qiita.help@gmail.com for more information"
+        )
 
     bioms = [
-        (f'{out_dir}/per-gene.biom', 'per_gene' 'Per gene Predictions'),
-        (f'{out_dir}/ko.biom', 'ko' 'KEGG Ontology (KO)'),
-        (f'{out_dir}/ec.biom', 'ec' 'KEGG Enzyme (EC)'),
-        (f'{out_dir}/pathway.biom', 'pathway' 'KEGG Pathway'),
+        (f"{out_dir}/per-gene.biom", "per_gene", "Per gene Predictions"),
+        (f"{out_dir}/ko.biom", "ko", "KEGG Ontology (KO)"),
+        (f"{out_dir}/ec.biom", "ec", "KEGG Enzyme (EC)"),
+        (f"{out_dir}/pathway.biom", "pathway", "KEGG Pathway"),
     ]
 
     for fb, fn, bn in bioms:
         if exists(fb):
-            ainfo.append(ArtifactInfo(bn, 'BIOM', [
-                (fb, 'biom'),
-                (_coverage_copy(f'{out_dir}/{fn}/'), 'plain_text')]))
+            files = [(fb, "biom")]
+            files.append((_coverage_copy(f"{out_dir}/{fn}/"), "plain_text"))
+            ainfo.append(
+                ArtifactInfo(
+                    bn,
+                    "BIOM",
+                    files,
+                )
+            )
         else:
-            errors.append(f'Table "{bn}" was not created, please contact '
-                          'qiita.help@gmail.com for more information')
+            errors.append(
+                f'Table "{bn}" was not created, please contact '
+                "qiita.help@gmail.com for more information"
+            )
 
     if errors:
-        return False, ainfo, '\n'.join(errors)
+        return False, ainfo, "\n".join(errors)
     else:
-
         return True, ainfo, ""
 
 
@@ -399,9 +403,10 @@ def generate_minimap2_processing(qclient, job_id, out_dir, parameters):
         Returns the two filepaths of the slurm scripts
     """
     qclient.update_job_step(
-        job_id, "Step 1 of 4: Collecting info and generating submission")
+        job_id, "Step 1 of 4: Collecting info and generating submission"
+    )
 
-    artifact_id = parameters["artifact_id"]
+    artifact_id = parameters["artifact"]
 
     njobs = generate_sample_list(qclient, artifact_id, out_dir)
 
@@ -411,9 +416,10 @@ def generate_minimap2_processing(qclient, job_id, out_dir, parameters):
     )
 
     jinja_env = Environment(loader=KISSLoader("../data/templates"))
-    minimap2_template = jinja_env.get_template("woltka_minimap2.sbatch")
+    GT = jinja_env.get_template
+    minimap2_template = GT("woltka_minimap2.sbatch")
     minimap2_script = _write_slurm(
-        f'{out_dir}/minimap2',
+        f"{out_dir}/minimap2",
         minimap2_template,
         conda_environment=CONDA_ENV,
         output=out_dir,
@@ -424,10 +430,9 @@ def generate_minimap2_processing(qclient, job_id, out_dir, parameters):
         mem_in_gb=120,
         array_params=f"1-{njobs}%16",
     )
-    minimap2_merge_template = jinja_env.get_template(
-        "woltka_minimap2_merge.sbatch")
+    minimap2_merge_template = GT("woltka_minimap2_merge.sbatch")
     minimap2_merge_script = _write_slurm(
-        f'{out_dir}/merge',
+        f"{out_dir}/merge",
         minimap2_merge_template,
         conda_environment=CONDA_ENV,
         output=out_dir,
@@ -435,7 +440,7 @@ def generate_minimap2_processing(qclient, job_id, out_dir, parameters):
         node_count=1,
         nprocs=16,
         wall_time_limit=MAX_WALL_1000,
-        mem_in_gb=120
+        mem_in_gb=120,
     )
 
     return minimap2_script, minimap2_merge_script

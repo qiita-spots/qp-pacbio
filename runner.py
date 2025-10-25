@@ -9,6 +9,8 @@
 from qp_pacbio.qp_pacbio import generate_sample_list, pacbio_generate_templates
 from qp_pacbio.util import client_connect
 
+from os import makedirs
+from os.path import join
 import click
 from subprocess import run
 
@@ -33,7 +35,9 @@ def runner(artifact_id, out_dir, job_id):
 
     qclient = client_connect(QIITA_URL)
     njobs = generate_sample_list(qclient, artifact_id, out_dir)
-    pacbio_generate_templates(out_dir, job_id, njobs)
+    result_fp = join(out_dir, "results")
+    makedirs(result_fp, exist_ok=True)
+    pacbio_generate_templates(out_dir, job_id, njobs, QIITA_URL)
     print(qclient.artifact_and_preparation_files(artifact_id))
 
     jid1 = sbatch(["sbatch", "--parsable", f"{out_dir}/step-1/step-1.slurm"])

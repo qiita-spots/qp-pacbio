@@ -6,7 +6,7 @@
 #SBATCH --time {{wall_time_limit}}
 #SBATCH --mem {{mem_in_gb}}G
 #SBATCH -o {{output}}/merge/logs/%x-%A_%a.out
-#SBATCH -e {{output}}/merge/logs/%x-%A_%a.out
+#SBATCH -e {{output}}/merge/logs/%x-%A_%a.err
 
 source ~/.bashrc
 set -e

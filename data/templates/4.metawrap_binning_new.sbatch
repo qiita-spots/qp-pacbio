@@ -6,7 +6,7 @@
 #SBATCH --time {{wall_time_limit}}
 #SBATCH --mem {{mem_in_gb}}G
 #SBATCH -o {{output}}/step-4/logs/%x-%A_%a.out
-#SBATCH -e {{output}}/step-4/logs/%x-%A_%a.out
+#SBATCH -e {{output}}/step-4/logs/%x-%A_%a.err
 #SBATCH --array {{array_params}}
 
 source ~/.bashrc
@@ -20,6 +20,12 @@ sample_name=`echo $input | awk '{print $1}'`
 filename=`echo $input | awk '{print $2}'`
 
 fn=`basename ${filename}`
+
+# updating the GUI when task 1 runs
+if [[ "$step" == "1" ]]; then
+    python -c "from qp_pacbio.util import client_connect; qclient = client_connect('{{url}}'); qclient.update_job_step('{{qjid}}', 'Running step 4: ${SLURM_ARRAY_JOB_ID}')"
+fi
+
 folder=step-4/${sample_name}_binning
 
 mkdir -p {{output}}/${folder}/work_files/

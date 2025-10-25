@@ -89,9 +89,10 @@ jobs:
 
           pip install -e .
           pip --quiet install coveralls
+          export ENVIRONMENT="source /home/runner/.profile; conda activate qp_pacbio_2025.9"
 
           configure_qtp_job_output_folder --env-script "source /home/runner/.profile; conda activate qp_pacbio_2025.9" --ca-cert $QIITA_ROOTCA_CERT
-          configure_qp_pacbio --env-script "source /home/runner/.profile; conda activate qp_pacbio_2025.9" --ca-cert $QIITA_ROOTCA_CERT
+          configure_qp_pacbio --env-script 'source /home/runner/.profile; conda activate qp_pacbio_2025.9; export ENVIRONMENT="source /home/runner/.profile; conda activate qp_pacbio_2025.9"' --ca-cert $QIITA_ROOTCA_CERT
 
           echo "Available Qiita plugins"
           ls ~/.qiita_plugins/
