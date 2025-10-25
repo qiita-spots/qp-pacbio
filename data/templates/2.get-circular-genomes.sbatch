@@ -45,12 +45,19 @@ done
 sed -i 's/>//' circular_id.txt
 seqkit grep -v -f circular_id.txt ../${sample_name}_all_contigs.fa > ../${sample_name}_noLCG.fa
 
-lcg_folder={{result_fp}}/${sample_name}/LCG/
-mkdir -p ${lcg_folder}
-for f in `ls {{output}}/step-2/${sample_name}_split/*.fa`; do
-    sn=`basename ${f/_circ/}`;
-    sn=${sn/part_/};
-    cat $f | gzip > ${lcg_folder}/${sn/.fa/.fna}.gz;
-done
+shopt -s nullglob
+
+FILES=({{output}}/step-2/${sample_name}_split/*.fa)
+{% raw %}
+if (( ${#FILES[@]} > 0 )); then
+{% endraw %}
+    lcg_folder={{result_fp}}/${sample_name}/LCG/
+    mkdir -p ${lcg_folder}
+    for f in `ls {{output}}/step-2/${sample_name}_split/*.fa`; do
+        sn=`basename ${f/_circ/}`;
+        sn=${sn/part_/};
+        cat $f | gzip > ${lcg_folder}/${sn/.fa/.fna}.gz;
+    done
+fi
 
 cat {{output}}/step-2/${sample_name}_noLCG.fa | gzip > {{result_fp}}/${sample_name}/${sample_name}.noLCG.fna.gz
