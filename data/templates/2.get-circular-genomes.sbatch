@@ -48,9 +48,7 @@ seqkit grep -v -f circular_id.txt ../${sample_name}_all_contigs.fa > ../${sample
 shopt -s nullglob
 
 FILES=({{output}}/step-2/${sample_name}_split/*.fa)
-{% raw %}
-if (( ${#FILES[@]} > 0 )); then
-{% endraw %}
+if [ -f $FILES ]; then
     lcg_folder={{result_fp}}/${sample_name}/LCG/
     mkdir -p ${lcg_folder}
     for f in `ls {{output}}/step-2/${sample_name}_split/*.fa`; do
