@@ -15,11 +15,12 @@ from unittest import main
 
 from qiita_client.testing import PluginTestCase
 
-from qp_pacbio import plugin, CONDA_ENVIRONMENT
+from qp_pacbio import plugin
 from qp_pacbio.qp_pacbio import (
     generate_minimap2_processing,
     generate_sample_list,
     pacbio_generate_templates,
+    CONDA_ENVIRONMENT,
 )
 
 
