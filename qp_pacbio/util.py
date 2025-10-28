@@ -6,8 +6,10 @@
 # The full license is in the file LICENSE, distributed with this software.
 # -----------------------------------------------------------------------------
 from os import environ
-from os.path import join, expanduser
+from os.path import join, expanduser, getmtime, exists
 from configparser import ConfigParser
+import pathlib
+from jinja2 import BaseLoader, TemplateNotFound
 
 from qiita_client import QiitaClient
 
@@ -38,3 +40,20 @@ def client_connect(url):
         config.get("oauth2", "SERVER_CERT"),
     )
     return qclient
+
+
+# taken from the Jinja docs (BaseLoader API):
+# https://jinja.palletsprojects.com/en/3.0.x/api/
+class KISSLoader(BaseLoader):
+    def __init__(self, path):
+        base = pathlib.Path(__file__).parent.resolve()
+        self.path = join(base, path)
+
+    def get_source(self, environment, template):
+        path = join(self.path, template)
+        if not exists(path):
+            raise TemplateNotFound(template)
+        mtime = getmtime(path)
+        with open(path, encoding="utf-8") as f:
+            source = f.read()
+        return source, path, lambda: mtime == getmtime(path)

@@ -5,9 +5,8 @@
 #SBATCH -n 1
 #SBATCH --time {{wall_time_limit}}
 #SBATCH --mem {{mem_in_gb}}G
-#SBATCH -o {{output}}/log-finish.out
-#SBATCH -e {{output}}/log-finish.err
-
+#SBATCH -o {{output}}/finish/logs/finish.out
+#SBATCH -e {{output}}/finish/logs/finish.err
 
 source ~/.bashrc
 set -e
