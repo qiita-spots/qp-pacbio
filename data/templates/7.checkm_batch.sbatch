@@ -6,7 +6,7 @@
 #SBATCH --time {{wall_time_limit}}
 #SBATCH --mem {{mem_in_gb}}G
 #SBATCH -o {{output}}/step-7/logs/%x-%A_%a.out
-#SBATCH -e {{output}}/step-7/logs/%x-%A_%a.out
+#SBATCH -e {{output}}/step-7/logs/%x-%A_%a.err
 #SBATCH --array {{array_params}}
 
 
@@ -22,6 +22,11 @@ filename=`echo $input | awk '{print $2}'`
 
 fn=`basename ${filename}`
 
+# updating the GUI when task 1 runs
+if [[ "$step" == "1" ]]; then
+    python -c "from qp_pacbio.util import client_connect; qclient = client_connect('{{url}}'); qclient.update_job_step('{{qjid}}', 'Running step 7: ${SLURM_ARRAY_JOB_ID}')"
+fi
+
 folder=step-7/checkm_out
 mkdir -p ${folder}
 
@@ -33,4 +38,4 @@ cd ../
 cp ${sample_name}_checkm_table.txt {{output}}/step-7/checkm_out/
 
 ### Save results
-cat {{output}}/step-7/checkm_out/${sample_name}*.txt | gz > {{result_fp}}/${sample_name}/${sample_name}.txt.gz
+cat {{output}}/step-7/checkm_out/${sample_name}*.txt | gzip > {{result_fp}}/${sample_name}/${sample_name}.txt.gz

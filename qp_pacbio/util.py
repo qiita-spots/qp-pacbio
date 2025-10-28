@@ -12,9 +12,11 @@ from configparser import ConfigParser
 from qiita_client import QiitaClient
 
 
-plugin_details = {'name': 'qp-pacbio',
-                  'version': '2025.9',
-                  'description': 'PacBio processing'}
+plugin_details = {
+    "name": "qp-pacbio",
+    "version": "2025.09",
+    "description": "PacBio processing",
+}
 
 
 def client_connect(url):
@@ -22,9 +24,8 @@ def client_connect(url):
     version = plugin_details["version"]
 
     config = ConfigParser()
-    conf_dir = environ.get(
-        "QIITA_PLUGINS_DIR", join(expanduser("~"), ".qiita_plugins")
-    )
+    qp = join(expanduser("~"), ".qiita_plugins")
+    conf_dir = environ.get("QIITA_PLUGINS_DIR", qp)
     conf_fp = join(conf_dir, f"{name}_{version}.conf")
 
     with open(conf_fp, "r", encoding="utf-8") as conf_file:

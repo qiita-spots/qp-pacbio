@@ -21,6 +21,10 @@ filename=`echo $input | awk '{print $2}'`
 
 fn=`basename ${filename}`
 
+# updating the GUI when task 1 runs
+if [[ "$step" == "1" ]]; then
+    python -c "from qp_pacbio.util import client_connect; qclient = client_connect('{{url}}'); qclient.update_job_step('{{qjid}}', 'Running step 3: ${SLURM_ARRAY_JOB_ID}')"
+fi
 
 folder=step-3/${sample_name}_binning
 mkdir -p ${folder}
