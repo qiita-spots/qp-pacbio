@@ -10,7 +10,7 @@
 
 source ~/.bashrc
 set -e
-conda activate {{conda_environment}}
+{{conda_environment}}
 cd {{output}}
 
 tar zcvf results/logs.tgz step*/logs/

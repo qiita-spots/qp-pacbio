@@ -15,38 +15,31 @@ from unittest import main
 
 from qiita_client.testing import PluginTestCase
 
-from qp_pacbio import plugin
+from qp_pacbio import plugin, CONDA_ENVIRONMENT
 from qp_pacbio.qp_pacbio import (
     generate_minimap2_processing,
     generate_sample_list,
     pacbio_generate_templates,
 )
 
-# Keep these in sync with your generator defaults
-CONDA_ENV = "qp_pacbio_2025.9"
-STEP1_NPROCS = 16
-STEP1_WALL = 1000
-STEP1_MEM_GB = 300  # generator uses 300G for step-1
-NODE_COUNT = 1
-PARTITION = "qiita"
 
 # Exact expected Step-1 script matching your template.
 # Escape ${...} -> ${{...}} and awk braces -> '{{print $1}}' etc.
 STEP_1_EXP = (
     "#!/bin/bash\n"
     "#SBATCH -J s1-{job_id}\n"
-    f"#SBATCH -p {PARTITION}\n"
-    f"#SBATCH -N {NODE_COUNT}\n"
-    f"#SBATCH -n {STEP1_NPROCS}\n"
-    f"#SBATCH --time {STEP1_WALL}\n"
-    f"#SBATCH --mem {STEP1_MEM_GB}G\n"
+    f"#SBATCH -p qiita\n"
+    f"#SBATCH -N 1\n"
+    f"#SBATCH -n 16\n"
+    f"#SBATCH --time 1-00:00:00\n"
+    f"#SBATCH --mem 90G\n"
     "#SBATCH -o {out_dir}/step-1/logs/%x-%A_%a.out\n"
     "#SBATCH -e {out_dir}/step-1/logs/%x-%A_%a.err\n"
     "#SBATCH --array 1-{njobs}%16\n"
     "\n"
     "source ~/.bashrc\n"
     "set -e\n"
-    f"conda activate {CONDA_ENV}\n"
+    f"{CONDA_ENVIRONMENT}\n"
     "cd {out_dir}/step-1\n"
     "\n"
     "step=${{SLURM_ARRAY_TASK_ID}}\n"
@@ -65,7 +58,7 @@ STEP_1_EXP = (
     "${{SLURM_ARRAY_JOB_ID}}')\"\n"
     "fi\n"
     "\n"
-    f"hifiasm_meta -t {STEP1_NPROCS} -o "
+    f"hifiasm_meta -t 16 -o "
     "{out_dir}/step-1/${{sample_name}} ${{filename}}"
 )
 

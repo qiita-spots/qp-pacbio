@@ -92,7 +92,7 @@ def execute(url, job_id, output_dir):
                 "sbatch",
                 "--parsable",
                 "--dependency",
-                f"afterok:{all_jids[-1]}",
+                f"afterany:{all_jids[-1]}",
                 f"{output_dir}/finish/finish.slurm",
             ]
             task = run(cmd, stdout=PIPE)

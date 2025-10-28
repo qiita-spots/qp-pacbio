@@ -10,7 +10,7 @@
 
 source ~/.bashrc
 set -e
-conda activate {{conda_environment}}
+{{conda_environment}}
 cd {{output}}/
 tax=/projects/wol/qiyun/wol2/databases/minimap2/WoLr2.tax
 coords=/projects/wol/qiyun/wol2/databases/minimap2/WoLr2.coords

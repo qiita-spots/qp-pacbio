@@ -11,7 +11,7 @@
 
 source ~/.bashrc
 set -e
-conda activate {{conda_environment}}
+{{conda_environment}}
 mkdir -p {{output}}/alignments
 cd {{output}}/
 db=/ddn_scratch/qiita_t/working_dir/tmp/db/WoLr2.mmi
