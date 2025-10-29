@@ -6,6 +6,9 @@ build-backend = "setuptools.build_meta"
 packages = ["qp_pacbio"]
 include-package-data = true
 
+[tool.setuptools.packages.find]
+where = ["data"]
+
 [project]
 name = "qp_pacbio"
 # version strings must comply with PEP 440:
