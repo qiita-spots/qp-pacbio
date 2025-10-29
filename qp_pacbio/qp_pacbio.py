@@ -393,6 +393,14 @@ def generate_minimap2_processing(qclient, job_id, out_dir, parameters):
 
     m2mt = JGT("woltka_minimap2_merge.sbatch")
     step_resources = resources["merge"]
+    params = main_parameters | {
+        "job_name": f"me_{job_id}",
+        "node_count": step_resources["node_count"],
+        "nprocs": step_resources["nprocs"],
+        "wall_time_limit": step_resources["wall_time_limit"],
+        "mem_in_gb": step_resources["mem_in_gb"],
+    }
+    step_resources = resources["merge"]
     minimap2_merge_script = _write_slurm(f"{out_dir}/merge", m2mt, **params)
 
     return minimap2_script, minimap2_merge_script

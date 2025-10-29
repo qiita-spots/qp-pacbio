@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -J m2_{{job_name}}
+#SBATCH -J {{job_name}}
 #SBATCH -p qiita
 #SBATCH -N {{node_count}}
 #SBATCH -n {{nprocs}}
