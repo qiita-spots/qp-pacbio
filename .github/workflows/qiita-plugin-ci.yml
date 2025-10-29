@@ -136,7 +136,7 @@ jobs:
           export PYTHONWARNINGS="ignore:Certificate for localhost has no \`subjectAltName\`"
           export ENVIRONMENT="source /home/runner/.profile; conda activate qp_pacbio_2025.9"
 
-          pytest qp_pacbio --doctest-modules --cov=qp_pacbio --cov-report=lcov
+          pytest qp_pacbio --doctest-modules --cov=qp_pacbio --cov-report=lcov --ignore=qp_pacbio/data
 
       - uses: codecov/codecov-action@v3
         with:
