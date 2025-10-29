@@ -42,12 +42,15 @@ def client_connect(url):
     return qclient
 
 
+def find_base_path():
+    return pathlib.Path(__file__).parent.resolve()
+
+
 # taken from the Jinja docs (BaseLoader API):
 # https://jinja.palletsprojects.com/en/3.0.x/api/
 class KISSLoader(BaseLoader):
     def __init__(self, path):
-        base = pathlib.Path(__file__).parent.resolve()
-        self.path = join(base, path)
+        self.path = join(find_base_path(), path)
 
     def get_source(self, environment, template):
         path = join(self.path, template)

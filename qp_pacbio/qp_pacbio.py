@@ -15,12 +15,12 @@ from jinja2 import Environment
 from qiita_client import ArtifactInfo
 from subprocess import run
 
-from .util import KISSLoader
+from .util import KISSLoader, find_base_path
 
 
-JENV = Environment(loader=KISSLoader("../data/templates"))
+JENV = Environment(loader=KISSLoader("data/templates"))
 JGT = JENV.get_template
-RESOURCES = yaml.safe_load(open("data/resources.yaml"))
+RESOURCES = yaml.safe_load(open(join(find_base_path(), "data/resources.yaml")))
 CONDA_ENVIRONMENT = environ["ENVIRONMENT"]
 
 
