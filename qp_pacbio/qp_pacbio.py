@@ -87,6 +87,7 @@ def pacbio_generate_templates(out_dir, job_id, njobs, result_fp, url):
         "output": out_dir,
         "url": url,
         "qjid": job_id,
+        "results": result_fp,
     }
 
     # Step 1
