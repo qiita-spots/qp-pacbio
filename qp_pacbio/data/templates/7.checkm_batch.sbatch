@@ -39,3 +39,5 @@ cp ${sample_name}_checkm_table.txt {{output}}/step-7/checkm_out/
 
 ### Save results
 cat {{output}}/step-7/checkm_out/${sample_name}*.txt | gzip > {{result_fp}}/${sample_name}/${sample_name}.txt.gz
+
+touch {{output}}/step-7/completed_${SLURM_ARRAY_TASK_ID}.log

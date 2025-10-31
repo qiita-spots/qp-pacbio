@@ -30,3 +30,4 @@ folder=step-3/${sample_name}_binning
 mkdir -p ${folder}
 minimap2 -x map-hifi -t {{nprocs}} -a --MD --eqx -o ${folder}/${sample_name}.sam step-2/${sample_name}_noLCG.fa ${filename}
 samtools view -bS -@4 ${folder}/${sample_name}.sam | samtools sort -@4 -O bam -o ${folder}/${sample_name}.sorted.bam
+touch {{output}}/step-3/completed_${SLURM_ARRAY_TASK_ID}.log

@@ -36,3 +36,4 @@ ln -s ${filename} {{output}}/step-4/${sample_name}_binning/work_files/${sample_n
 metawrap binning -a {{output}}/step-2/${sample_name}_noLCG.fa -o {{output}}/step-4/${sample_name}_binning \
    -t {{nprocs}} -m 100 -l 16000 --single-end --metabat2 --maxbin2 --concoct --universal {{output}}/step-4/${sample_name}_binning/work_files/${sample_name}.fastq
 rm -rf {{output}}/step-4/${sample_name}_binning/work_files
+touch {{output}}/step-4/completed_${SLURM_ARRAY_TASK_ID}.log

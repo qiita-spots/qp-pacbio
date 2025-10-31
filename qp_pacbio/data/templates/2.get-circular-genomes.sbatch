@@ -45,12 +45,13 @@ done
 sed -i 's/>//' circular_id.txt
 seqkit grep -v -f circular_id.txt ../${sample_name}_all_contigs.fa > ../${sample_name}_noLCG.fa
 
+lcg_folder={{result_fp}}/${sample_name}/LCG/
+mkdir -p ${lcg_folder}
+
 shopt -s nullglob
 
 FILES=({{output}}/step-2/${sample_name}_split/*.fa)
 if [ -f $FILES ]; then
-    lcg_folder={{result_fp}}/${sample_name}/LCG/
-    mkdir -p ${lcg_folder}
     for f in `ls {{output}}/step-2/${sample_name}_split/*.fa`; do
         sn=`basename ${f/_circ/}`;
         sn=${sn/part_/};
@@ -58,6 +59,17 @@ if [ -f $FILES ]; then
     done
 fi
 
-if [ -f ${{output}}/step-2/${sample_name}_noLCG.fa ]; then
+if [ -f {{output}}/step-2/${sample_name}_noLCG.fa ]; then
     cat {{output}}/step-2/${sample_name}_noLCG.fa | gzip > {{result_fp}}/${sample_name}/${sample_name}.noLCG.fna.gz
+fi
+
+
+# if the files don't exist, it means that this step didn't generate any
+# inputs for the next step; thus generating all the completed files
+if [[ ! -f "$FILES" && ! -f "{{output}}/step-2/${sample_name}_noLCG.fa" ]]; then
+    touch {{output}}/step-3/completed_${SLURM_ARRAY_TASK_ID}.log
+    touch {{output}}/step-4/completed_${SLURM_ARRAY_TASK_ID}.log
+    touch {{output}}/step-5/completed_${SLURM_ARRAY_TASK_ID}.log
+    touch {{output}}/step-6/completed_${SLURM_ARRAY_TASK_ID}.log
+    touch {{output}}/step-7/completed_${SLURM_ARRAY_TASK_ID}.log
 fi
