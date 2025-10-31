@@ -63,7 +63,7 @@ STEP_1_EXP = (
     "{out_dir}/step-1/${{sample_name}} ${{filename}}\n"
     f"hifiasm_meta -t 16 -o "
     "{out_dir}/step-1/${{sample_name}} ${{filename}}\n"
-    "touch {out_dir}/step-1/completed_${{SLURM_ARRAY_JOB_ID}}.log"
+    "touch {out_dir}/step-1/completed_${{SLURM_ARRAY_TASK_ID}}.log"
 )
 
 
