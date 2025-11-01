@@ -8,6 +8,7 @@
 from os import makedirs, mkdir
 from os.path import basename, join, exists
 from shutil import copy2
+from glob import glob
 
 import yaml
 from os import environ
@@ -22,6 +23,7 @@ JENV = Environment(loader=KISSLoader("data/templates"))
 JGT = JENV.get_template
 RESOURCES = yaml.safe_load(open(join(find_base_path(), "data/resources.yaml")))
 CONDA_ENVIRONMENT = environ["ENVIRONMENT"]
+PACBIO_PROCESSING_STEPS = 7
 
 
 def sbatch(args):
@@ -250,6 +252,22 @@ def pacbio_processing(qclient, job_id, parameters, out_dir):
     makedirs(result_fp, exist_ok=True)
 
     qclient.update_job_step(job_id, "Commands finished")
+    # validating that all steps are complete
+    with open(join(out_dir, "sample_list.txt"), "r") as fp:
+        expected = len(fp.readlines())
+
+    failed_steps = []
+    for step_id in range(1, PACBIO_PROCESSING_STEPS + 1, 1):
+        obs = glob(join(out_dir, f"step-{step_id}", "completed_*.log"))
+        if len(obs) != expected:
+            failed_steps.append(str(step_id))
+    if failed_steps:
+        failed_steps = ", ".join(failed_steps)
+        message = (
+            "These steps have less than expected logs: "
+            f" {failed_steps}; please email the admin"
+        )
+        return (False, [], message)
 
     paths = [(f"{result_fp}/", "directory")]
     return (

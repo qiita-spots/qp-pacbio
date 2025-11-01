@@ -14,6 +14,7 @@ from qp_pacbio.qp_pacbio import (
     generate_minimap2_processing,
     generate_sample_list,
     pacbio_generate_templates,
+    PACBIO_PROCESSING_STEPS,
 )
 from qp_pacbio.util import client_connect
 from subprocess import run, PIPE
@@ -72,10 +73,8 @@ def execute(url, job_id, output_dir):
             njobs = generate_sample_list(qclient, artifact_id, output_dir)
             pacbio_generate_templates(output_dir, job_id, njobs, frp, url)
 
-            total_steps = 7
-
             all_jids = []
-            for step_id in range(1, total_steps + 1, 1):
+            for step_id in range(1, PACBIO_PROCESSING_STEPS + 1, 1):
                 cmd = [
                     "sbatch",
                     "--parsable",
