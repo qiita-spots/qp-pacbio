@@ -35,15 +35,21 @@ cd ../step-2/${sample_name}_split
 
 ### remove small circular genomes
 find . -type f -size -512k -exec rm -f {} +
-### extract fasta id for all the genomes in the split folder
-for f in *.fa; do
-    k=${f##*/}
-    n=${f%.*}
-    grep -E "^>" $f >> circular_id.txt
-done
 
-sed -i 's/>//' circular_id.txt
-seqkit grep -v -f circular_id.txt ../${sample_name}_all_contigs.fa > ../${sample_name}_noLCG.fa
+# this can result on not having any files left so
+# making sure we have files left
+#
+# extract fasta id for all the genomes in the split folder
+FILES=(*.fa)
+if [ -f $FILES ]; then
+    for f in *.fa; do
+        k=${f##*/}
+        n=${f%.*}
+        grep -E "^>" $f >> circular_id.txt
+    done
+    sed -i 's/>//' circular_id.txt
+    seqkit grep -v -f circular_id.txt ../${sample_name}_all_contigs.fa > ../${sample_name}_noLCG.fa
+fi
 
 lcg_folder={{result_fp}}/${sample_name}/LCG/
 mkdir -p ${lcg_folder}
