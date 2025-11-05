@@ -33,6 +33,9 @@ cat ${sample_name}.p_ctg.gfa | awk '$1=="S" {printf ">%s\n%s\n", $2, $3} ' > ../
 
 cd ../step-2/${sample_name}_split
 
+mkdir {{output}}/step-2/${sample_name}_small_LCGs
+find . -maxdepth 1 -type f -size -512k -print0 | xargs -0 -r cp -t ../${sample_name}_small_LCGs
+
 ### remove small circular genomes
 find . -type f -size -512k -exec rm -f {} +
 ### extract fasta id for all the genomes in the split folder
@@ -46,6 +49,17 @@ sed -i 's/>//' circular_id.txt
 seqkit grep -v -f circular_id.txt ../${sample_name}_all_contigs.fa > ../${sample_name}_noLCG.fa
 
 shopt -s nullglob
+
+FILES_small_LCG=({{output}}/step-2/${sample_name}_small_LCGs/*.fa)
+if [ -f $FILES_small_LCG ]; then
+    small_lcg_folder={{result_fp}}/${sample_name}/small_LCG/
+    mkdir -p ${small_lcg_folder}
+    for f in `ls {{output}}/step-2/${sample_name}_small_LCGs/*.fa`; do
+        sn=`basename ${f/_circ/}`;
+        sn=${sn/part_/};
+        cat $f | gzip > ${small_lcg_folder}/${sn/.fa/.fna}.gz;
+    done
+fi
 
 FILES=({{output}}/step-2/${sample_name}_split/*.fa)
 if [ -f $FILES ]; then
