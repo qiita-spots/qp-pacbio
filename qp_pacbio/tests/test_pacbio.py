@@ -198,12 +198,11 @@ class PacWoltkaProfilingTests(PacBioTests):
             "\n",
             "fn=`basename ${filename}`\n",
             "\n",
-            "minimap2 -x map-hifi -t 16 -a \\\n",
+            "minimap2 -x map-hifi -t {{nprocs}} -a \\\n",
             "       --secondary=no --MD --eqx ${db} \\\n",
             "       ${filename} | \\\n",
-            "   samtools sort -@ 16 - | \\\n",
             '   awk \'BEGIN { FS=OFS="\\t" } /^@/ { print; next } '
-            '{ $10="*"; $11="*" } 1\' | \\\n',
+            '{ $10="*"; $11="*" } 1\' | grep -v "^@" | sort -k 1 | \\\n',
             f"   xz -1 -T1 > {out_dir}/alignments/${{sample_name}}.sam.xz",
         ]
         self.assertEqual(obs_main, exp_main)
