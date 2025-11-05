@@ -198,7 +198,7 @@ class PacWoltkaProfilingTests(PacBioTests):
             "\n",
             "fn=`basename ${filename}`\n",
             "\n",
-            "minimap2 -x map-hifi -t {{nprocs}} -a \\\n",
+            "minimap2 -x map-hifi -t 16 -a \\\n",
             "       --secondary=no --MD --eqx ${db} \\\n",
             "       ${filename} | \\\n",
             '   awk \'BEGIN { FS=OFS="\\t" } /^@/ { print; next } '
