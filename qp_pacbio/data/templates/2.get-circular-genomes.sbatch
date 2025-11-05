@@ -32,7 +32,9 @@ seqkit split --by-id ../step-2/${sample_name}_circ.fa -O ../step-2/${sample_name
 cat ${sample_name}.p_ctg.gfa | awk '$1=="S" {printf ">%s\n%s\n", $2, $3} ' > ../step-2/${sample_name}_all_contigs.fa
 
 cd ../step-2/${sample_name}_split
-
+# making a copy of the small_LCG before they are removed
+mkdir -p {{output}}/step-2/${sample_name}_small_LCG
+find . -maxdepth 1 -type f -size -512k -print0 | xargs -0 -r cp -t ../${sample_name}_small_LCG
 ### remove small circular genomes
 find . -type f -size -512k -exec rm -f {} +
 
@@ -50,9 +52,6 @@ if [ -f $FILES ]; then
     sed -i 's/>//' circular_id.txt
     seqkit grep -v -f circular_id.txt ../${sample_name}_all_contigs.fa > ../${sample_name}_noLCG.fa
 fi
-
-lcg_folder={{result_fp}}/${sample_name}/LCG/
-mkdir -p ${lcg_folder}
 
 FILES=({{output}}/step-2/${sample_name}_split/*.fa)
 if [ -f $FILES ]; then
@@ -76,4 +75,17 @@ if [[ ! -f "$FILES" && ! -f "{{output}}/step-2/${sample_name}_noLCG.fa" ]]; then
     touch {{output}}/step-5/completed_${SLURM_ARRAY_TASK_ID}.log
     touch {{output}}/step-6/completed_${SLURM_ARRAY_TASK_ID}.log
     touch {{output}}/step-7/completed_${SLURM_ARRAY_TASK_ID}.log
+fi
+
+# saving small LCG, note that these are not processed downstrem so not
+# relevant to the "complete" files
+small_lcg_folder={{result_fp}}/${sample_name}/small_LCG/
+mkdir -p ${small_lcg_folder}
+FILES=({{output}}/step-2/${sample_name}_small_LCGs/*.fa)
+if [ -f $FILES ]; then
+    for f in `ls {{output}}/step-2/${sample_name}_small_LCGs/*.fa`; do
+        sn=`basename ${f/_circ/}`;
+        sn=${sn/part_/};
+        cat $f | gzip > ${small_lcg_folder}/${sn/.fa/.fna}.gz;
+    done
 fi
