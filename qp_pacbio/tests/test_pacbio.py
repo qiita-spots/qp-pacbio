@@ -188,7 +188,7 @@ class PacWoltkaProfilingTests(PacBioTests):
             f"{CONDA_ENVIRONMENT}\n",
             f"mkdir -p {out_dir}/alignments\n",
             f"cd {out_dir}/\n",
-            "db=/ddn_scratch/qiita_t/working_dir/tmp/db/WoLr2.mmi\n",
+            "db=/scratch/qp-pacbio/minimap2/WoLr2/WoLr2.map-hifi.mmi\n",
             "\n",
             "step=${SLURM_ARRAY_TASK_ID}\n",
             f"input=$(head -n $step {out_dir}/sample_list.txt | tail -n 1)\n",
