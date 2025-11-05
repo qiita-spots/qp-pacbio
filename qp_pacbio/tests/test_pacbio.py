@@ -208,7 +208,7 @@ class PacWoltkaProfilingTests(PacBioTests):
         ]
         self.assertEqual(obs_main, exp_main)
 
-        db_path = "/scratch/qp-woltka/WoLr2/"
+        db_path = "/scratch/qp-woltka/WoLr2"
         exp_merge = [
             "#!/bin/bash\n",
             "#SBATCH -J me_my-job-id\n",
