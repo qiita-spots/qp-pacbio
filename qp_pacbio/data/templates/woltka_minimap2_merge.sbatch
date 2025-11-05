@@ -12,10 +12,10 @@ source ~/.bashrc
 set -e
 {{conda_environment}}
 cd {{output}}/
-tax=/projects/wol/qiyun/wol2/databases/minimap2/WoLr2.tax
-coords=/projects/wol/qiyun/wol2/databases/minimap2/WoLr2.coords
-len_map=/projects/wol/qiyun/wol2/databases/minimap2/WoLr2/length.map
-functional_dir=/projects/wol/qiyun/wol2/databases/minimap2/WoLr2/
+tax=/scratch/qp-woltka/WoLr2/WoLr2.tax
+coords=/scratch/qp-woltka/WoLr2/WoLr2.coords
+len_map=/scratch/qp-woltka/WoLr2/genomes/length.map
+functional_dir=/scratch/qp-woltka/WoLr2/function/kegg/
 
 mkdir -p {{output}}/coverages/
 

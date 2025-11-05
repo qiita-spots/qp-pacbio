@@ -30,7 +30,7 @@ folder=step-5/${sample_name}_refinement
 mkdir -p ${folder}
 
 ### make sure qiita have access to this DB path. Otherwise copy the folder to qiita-owned folders
-DAS_db=/ddn_scratch/qiita/databases/qp-pacbio/DAS_Tool/db/
+DAS_db=/scratch/qp-pacbio/DAS_Tool/db/
 cd {{output}}/step-4/${sample_name}_binning
 
 rm metabat2_bins/bin.unbinned.fa

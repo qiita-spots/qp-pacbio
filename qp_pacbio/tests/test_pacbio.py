@@ -208,7 +208,7 @@ class PacWoltkaProfilingTests(PacBioTests):
         ]
         self.assertEqual(obs_main, exp_main)
 
-        db_path = "/projects/wol/qiyun/wol2/databases/minimap2"
+        db_path = "/scratch/qp-woltka/WoLr2/"
         exp_merge = [
             "#!/bin/bash\n",
             "#SBATCH -J me_my-job-id\n",
@@ -226,8 +226,8 @@ class PacWoltkaProfilingTests(PacBioTests):
             f"cd {out_dir}/\n",
             f"tax={db_path}/WoLr2.tax\n",
             f"coords={db_path}/WoLr2.coords\n",
-            f"len_map={db_path}/WoLr2/length.map\n",
-            f"functional_dir={db_path}/WoLr2/\n",
+            f"len_map={db_path}/genomes/length.map\n",
+            f"functional_dir={db_path}/function/kegg/\n",
             "\n",
             f"mkdir -p {out_dir}/coverages/\n",
             "\n",

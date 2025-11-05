@@ -14,7 +14,7 @@ set -e
 {{conda_environment}}
 mkdir -p {{output}}/alignments
 cd {{output}}/
-db=/ddn_scratch/qiita_t/working_dir/tmp/db/WoLr2.mmi
+db=/scratch/qp-pacbio/minimap2/WoLr2/WoLr2.map-hifi.mmi
 
 step=${SLURM_ARRAY_TASK_ID}
 input=$(head -n $step {{output}}/sample_list.txt | tail -n 1)
