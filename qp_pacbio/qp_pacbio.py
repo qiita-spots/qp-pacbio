@@ -310,7 +310,7 @@ def minimap2_processing(qclient, job_id, parameters, out_dir):
     ainfo = []
 
     fp_biom = f"{out_dir}/none.biom"
-    fp_alng = f"{out_dir}/alignment.tar"
+    fp_alng = f"{out_dir}/alignments.tar"
     if exists(fp_biom) and exists(fp_alng):
         ainfo.append(
             ArtifactInfo(
@@ -359,7 +359,7 @@ def minimap2_processing(qclient, job_id, parameters, out_dir):
         return True, ainfo, ""
 
 
-def generate_minimap2_processing(qclient, job_id, out_dir, parameters):
+def generate_minimap2_processing(qclient, job_id, out_dir, parameters, url):
     """generates slurm scripts for minimap2/woltka processing.
 
     Parameters
@@ -372,6 +372,8 @@ def generate_minimap2_processing(qclient, job_id, out_dir, parameters):
         Output directory.
     parameters : dict
         Parameters for this job.
+    url : str
+        URL to send the respose, finish the job.
 
     Returns
     -------
@@ -418,6 +420,7 @@ def generate_minimap2_processing(qclient, job_id, out_dir, parameters):
         "nprocs": step_resources["nprocs"],
         "wall_time_limit": step_resources["wall_time_limit"],
         "mem_in_gb": step_resources["mem_in_gb"],
+        "url": url,
     }
     step_resources = resources["merge"]
     minimap2_merge_script = _write_slurm(f"{out_dir}/merge", m2mt, **params)

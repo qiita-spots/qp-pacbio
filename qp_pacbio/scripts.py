@@ -58,7 +58,7 @@ def execute(url, job_id, output_dir):
 
         if command == "Woltka v0.1.7, minimap2":
             main_fp, merge_fp = generate_minimap2_processing(
-                qclient, job_id, output_dir, parameters
+                qclient, job_id, output_dir, parameters, url
             )
 
             # Submitting jobs and returning id

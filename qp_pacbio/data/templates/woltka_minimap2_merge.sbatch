@@ -46,3 +46,5 @@ micov consolidate --paths {{output}}/cov_files.txt --lengths ${len_map} --output
 
 cd alignments
 tar -cvf ../alignments.tar *.sam.xz
+
+finish_qp_pacbio {{url}} {{qjid}} {{output}}

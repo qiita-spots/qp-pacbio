@@ -162,9 +162,10 @@ class PacWoltkaProfilingTests(PacBioTests):
         out_dir = mkdtemp()
         self._clean_up_files.append(out_dir)
 
+        url = "https://test.test.edu/"
         # this should fail cause we don't have valid data
         main_fp, merge_fp = generate_minimap2_processing(
-            self.qclient, job_id, out_dir, params
+            self.qclient, job_id, out_dir, params, url
         )
         with open(main_fp, "r") as f:
             obs_main = f.readlines()
@@ -271,6 +272,8 @@ class PacWoltkaProfilingTests(PacBioTests):
             "\n",
             "cd alignments\n",
             "tar -cvf ../alignments.tar *.sam.xz",
+            "\n",
+            f"finish_qp_pacbio {url} {job_id} {out_dir}\n",
         ]
         self.assertEqual(obs_merge, exp_merge)
 
