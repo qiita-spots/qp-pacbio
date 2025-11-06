@@ -271,9 +271,9 @@ class PacWoltkaProfilingTests(PacBioTests):
             f"--lengths ${{len_map}} --output {out_dir}/coverages.tgz\n",
             "\n",
             "cd alignments\n",
-            "tar -cvf ../alignments.tar *.sam.xz",
+            "tar -cvf ../alignments.tar *.sam.xz\n",
             "\n",
-            f"finish_qp_pacbio {url} {job_id} {out_dir}\n",
+            f"finish_qp_pacbio {url} {job_id} {out_dir}",
         ]
         self.assertEqual(obs_merge, exp_merge)
 
