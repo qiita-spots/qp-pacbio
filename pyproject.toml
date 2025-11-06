@@ -44,8 +44,8 @@ dependencies = [
     'PyYAML',
     "qiita-files@https://github.com/qiita-spots/qiita-files/archive/master.zip",
     "qiita_client@https://github.com/qiita-spots/qiita_client/archive/master.zip",
-    "woltka@https://github.com/qiyunzhu/woltka/archive/master.zip",
-    "micov@https://github.com/biocore/micov/archive/master.zip",
+    "woltka@git+https://github.com/qiyunzhu/woltka.git#egg=woltka",
+    "micov@git+https://github.com/biocore/micov.git#egg=micov",
 ]
 
 [project.scripts]

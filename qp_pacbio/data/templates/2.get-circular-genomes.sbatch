@@ -62,6 +62,7 @@ if [ -f $FILES ]; then
     done
 fi
 
+mkdir -p {{result_fp}}/${sample_name}/
 if [ -f {{output}}/step-2/${sample_name}_noLCG.fa ]; then
     cat {{output}}/step-2/${sample_name}_noLCG.fa | gzip > {{result_fp}}/${sample_name}/${sample_name}.noLCG.fna.gz
 fi
