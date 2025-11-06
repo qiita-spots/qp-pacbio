@@ -25,22 +25,21 @@ for f in `ls alignments/*.sam.xz`; do
     mkdir -p ${of};
     echo "woltka classify -i ${f} -o ${of}/none.biom --no-demux --lineage ${tax} --rank none --outcov {{output}}/coverages/";
     echo "woltka classify -i ${f} -o ${of}/per-gene.biom --no-demux -c ${coords}";
-done | parallel -j {{node_count}}
+done | parallel -j {{nprocs}}
 wait
 
 for f in `ls bioms/*/per-gene.biom`; do
     dn=`dirname ${f}`;
-    sn=`basename ${sn}`;
+    sn=`basename ${dn}`;
     echo "woltka collapse -i ${f} -m ${functional_dir}/orf-to-ko.map.xz -o ${dn}/ko.biom; " \
         "woltka collapse -i ${dn}/ko.biom -m ${functional_dir}/ko-to-ec.map -o ${dn}/ec.biom; " \
         "woltka collapse -i ${dn}/ko.biom -m ${functional_dir}/ko-to-reaction.map -o ${dn}/reaction.biom; " \
         "woltka collapse -i ${dn}/reaction.biom -m ${functional_dir}/reaction-to-module.map -o ${dn}/module.biom; " \
         "woltka collapse -i ${dn}/module.biom -m ${functional_dir}/module-to-pathway.map -o ${dn}/pathway.biom;"
-done | parallel -j {{node_count}}
+done | parallel -j {{nprocs}}
 wait
 
-# MISSING:
-# merge bioms!
+biom_merge_pacbio --base {{output}}
 
 find {{output}}/coverages/ -iname "*.cov" > {{output}}/cov_files.txt
 micov consolidate --paths {{output}}/cov_files.txt --lengths ${len_map} --output {{output}}/coverages.tgz
