@@ -177,8 +177,8 @@ class PacWoltkaProfilingTests(PacBioTests):
             "#SBATCH -p qiita\n",
             "#SBATCH -N 1\n",
             "#SBATCH -n 16\n",
-            "#SBATCH --time 1-00:00:00\n",
-            "#SBATCH --mem 120G\n",
+            "#SBATCH --time 36000\n",
+            "#SBATCH --mem 60G\n",
             f"#SBATCH -o {out_dir}/minimap2/logs/%x-%A_%a.out\n",
             f"#SBATCH -e {out_dir}/minimap2/logs/%x-%A_%a.err\n",
             "#SBATCH --array 1-2%16\n",
@@ -239,12 +239,12 @@ class PacWoltkaProfilingTests(PacBioTests):
             f'--rank none --outcov {out_dir}/coverages/";\n',
             '    echo "woltka classify -i ${f} -o ${of}/per-gene.biom '
             '--no-demux -c ${coords}";\n',
-            "done | parallel -j 1\n",
+            "done | parallel -j 16\n",
             "wait\n",
             "\n",
             "for f in `ls bioms/*/per-gene.biom`; do\n",
             "    dn=`dirname ${f}`;\n",
-            "    sn=`basename ${sn}`;\n",
+            "    sn=`basename ${dn}`;\n",
             '    echo "woltka collapse -i ${f} -m ${functional_dir}/'
             'orf-to-ko.map.xz -o ${dn}/ko.biom; " \\\n',
             '        "woltka collapse -i ${dn}/ko.biom -m ${functional_dir}/'
@@ -257,11 +257,10 @@ class PacWoltkaProfilingTests(PacBioTests):
             '        "woltka collapse -i ${dn}/module.biom -m '
             "${functional_dir}/module-to-pathway.map "
             '-o ${dn}/pathway.biom;"\n',
-            "done | parallel -j 1\n",
+            "done | parallel -j 16\n",
             "wait\n",
             "\n",
-            "# MISSING:\n",
-            "# merge bioms!\n",
+            f"biom_merge_pacbio --base {out_dir}\n",
             "\n",
             (
                 f'find {out_dir}/coverages/ -iname "*.cov" '
