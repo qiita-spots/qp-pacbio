@@ -53,6 +53,8 @@ if [ -f $FILES ]; then
     seqkit grep -v -f circular_id.txt ../${sample_name}_all_contigs.fa > ../${sample_name}_noLCG.fa
 fi
 
+lcg_folder={{result_fp}}/${sample_name}/LCG/
+mkdir -p ${lcg_folder}
 FILES=({{output}}/step-2/${sample_name}_split/*.fa)
 if [ -f $FILES ]; then
     for f in `ls {{output}}/step-2/${sample_name}_split/*.fa`; do
