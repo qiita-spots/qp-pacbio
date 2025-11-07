@@ -84,9 +84,9 @@ fi
 # relevant to the "complete" files
 small_lcg_folder={{result_fp}}/${sample_name}/small_LCG/
 mkdir -p ${small_lcg_folder}
-FILES=({{output}}/step-2/${sample_name}_small_LCGs/*.fa)
+FILES=({{output}}/step-2/${sample_name}_small_LCG/*.fa)
 if [ -f $FILES ]; then
-    for f in `ls {{output}}/step-2/${sample_name}_small_LCGs/*.fa`; do
+    for f in `ls {{output}}/step-2/${sample_name}_small_LCG/*.fa`; do
         sn=`basename ${f/_circ/}`;
         sn=${sn/part_/};
         cat $f | gzip > ${small_lcg_folder}/${sn/.fa/.fna}.gz;
