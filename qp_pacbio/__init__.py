@@ -17,7 +17,7 @@ plugin = QiitaPlugin(**plugin_details)
 #
 
 req_params = {"artifact": ("integer", ["per_sample_FASTQ"])}
-opt_params = {"Database": ["choice: [WoLr2]", "WoLr2"]}
+opt_params = {"Database": ['choice:["WoLr2"]', "WoLr2"]}
 outputs = {
     # taxonomic
     "Per genome Predictions": "BIOM",
@@ -27,7 +27,7 @@ outputs = {
     "KEGG Enzyme (EC)": "BIOM",
     "KEGG Pathway": "BIOM",
 }
-dflt_param_set = {"Database": "WoLr2"}
+dflt_param_set = {"WoLr2": {"Database": "WoLr2"}}
 minimap2_cmd = QiitaCommand(
     "Woltka v0.1.7, minimap2",
     "Functional and Taxonomic Predictions",
@@ -46,9 +46,9 @@ plugin.register_command(minimap2_cmd)
 req_params = {
     "artifact": ("integer", ["per_sample_FASTQ"]),
 }
-opt_params = {"Processing": ["choice: [default]", "default"]}
+opt_params = {"Processing": ['choice:["default"]', "default"]}
 outputs = {"output": "job-output-folder"}
-dflt_param_set = {"Processing": "default"}
+dflt_param_set = {"default": {"Processing": "default"}}
 pacbio_processing_cmd = QiitaCommand(
     "PacBio processing",
     "Default PacBio processing for Metagenomic Data",

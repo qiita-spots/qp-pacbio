@@ -17,7 +17,7 @@ from subprocess import run
 # Using woltka because we don't have a qp_pacbio command
 plugin_details = {
     "name": "qp-woltka",
-    "version": "2024.09",
+    "version": "2025.11",
     "description": "Woltka",
 }
 
