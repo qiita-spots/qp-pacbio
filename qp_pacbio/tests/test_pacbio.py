@@ -33,7 +33,7 @@ STEP_1_EXP = (
     f"#SBATCH -N 1\n"
     f"#SBATCH -n 16\n"
     f"#SBATCH --time 1-00:00:00\n"
-    f"#SBATCH --mem 150G\n"
+    f"#SBATCH --mem 200G\n"
     "#SBATCH -o {out_dir}/step-1/logs/%x-%A_%a.out\n"
     "#SBATCH -e {out_dir}/step-1/logs/%x-%A_%a.err\n"
     "#SBATCH --array 1-{njobs}%16\n"
