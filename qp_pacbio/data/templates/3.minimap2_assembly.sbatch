@@ -29,7 +29,7 @@ fi
 folder=step-3/${sample_name}_binning
 mkdir -p ${folder}
 
-if [ -f ${folder}/${sample_name}.sam step-2/${sample_name}_noLCG.fa ]; then
+if [ -f step-2/${sample_name}_noLCG.fa ]; then
     minimap2 -x map-hifi -I {{mem_in_gb}}G -t {{nprocs}} -a --MD --eqx -o ${folder}/${sample_name}.sam step-2/${sample_name}_noLCG.fa ${filename}
     samtools view -bS -@4 ${folder}/${sample_name}.sam | samtools sort -@4 -O bam -o ${folder}/${sample_name}.sorted.bam
 else
