@@ -28,12 +28,10 @@ fi
 
 folder=step-4/${sample_name}_binning
 
-mkdir -p {{output}}/${folder}/work_files/
+mkdir -p {{output}}/step-4/${folder}/work_files/
 cp {{output}}/step-3/${sample_name}_binning/${sample_name}.sorted.bam {{output}}/step-4/${sample_name}_binning/work_files/${sample_name}.bam
-rm {{output}}/step-3/${sample_name}_binning/${sample_name}.sorted.bam
 
 ln -s ${filename} {{output}}/step-4/${sample_name}_binning/work_files/${sample_name}.fastq
 metawrap binning -a {{output}}/step-2/${sample_name}_noLCG.fa -o {{output}}/step-4/${sample_name}_binning \
    -t {{nprocs}} -m 100 -l 16000 --single-end --metabat2 --maxbin2 --concoct --universal {{output}}/step-4/${sample_name}_binning/work_files/${sample_name}.fastq
-rm -rf {{output}}/step-4/${sample_name}_binning/work_files
 touch {{output}}/step-4/completed_${SLURM_ARRAY_TASK_ID}.log

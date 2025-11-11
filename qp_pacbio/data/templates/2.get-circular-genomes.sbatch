@@ -51,6 +51,8 @@ if [ -f $FILES ]; then
     done
     sed -i 's/>//' circular_id.txt
     seqkit grep -v -f circular_id.txt ../${sample_name}_all_contigs.fa > ../${sample_name}_noLCG.fa
+else
+    cp ../${sample_name}_all_contigs.fa > ../${sample_name}_noLCG.fa
 fi
 
 lcg_folder={{result_fp}}/${sample_name}/LCG/
