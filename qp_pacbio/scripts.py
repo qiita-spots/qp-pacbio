@@ -157,5 +157,5 @@ def biom_merge(base):
             else:
                 full = full.concat(loaded)
 
-            with h5py.File(f"{base}/{rank}", "w") as out:
-                full.to_hdf5(out, "fast-merge")
+        with h5py.File(f"{base}/{rank}", "w") as out:
+            full.to_hdf5(out, "fast-merge")

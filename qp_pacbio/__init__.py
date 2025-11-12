@@ -16,7 +16,7 @@ plugin = QiitaPlugin(**plugin_details)
 # minimap2 command
 #
 
-req_params = {"artifact": ("integer", ["per_sample_FASTQ"])}
+req_params = {"artifact": ("artifact", ["per_sample_FASTQ"])}
 opt_params = {"Database": ['choice:["WoLr2"]', "WoLr2"]}
 outputs = {
     # taxonomic
@@ -44,7 +44,7 @@ plugin.register_command(minimap2_cmd)
 #
 
 req_params = {
-    "artifact": ("integer", ["per_sample_FASTQ"]),
+    "artifact": ("artifact", ["per_sample_FASTQ"]),
 }
 opt_params = {"Processing": ['choice:["default"]', "default"]}
 outputs = {"output": "job-output-folder"}
