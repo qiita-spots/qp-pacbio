@@ -20,33 +20,27 @@ from qp_pacbio.qp_pacbio import (
     generate_minimap2_processing,
     generate_sample_list,
     pacbio_generate_templates,
+    CONDA_ENVIRONMENT,
 )
 
-# Keep these in sync with your generator defaults
-CONDA_ENV = "qp_pacbio_2025.9"
-STEP1_NPROCS = 16
-STEP1_WALL = 1000
-STEP1_MEM_GB = 300  # generator uses 300G for step-1
-NODE_COUNT = 1
-PARTITION = "qiita"
 
 # Exact expected Step-1 script matching your template.
 # Escape ${...} -> ${{...}} and awk braces -> '{{print $1}}' etc.
 STEP_1_EXP = (
     "#!/bin/bash\n"
     "#SBATCH -J s1-{job_id}\n"
-    f"#SBATCH -p {PARTITION}\n"
-    f"#SBATCH -N {NODE_COUNT}\n"
-    f"#SBATCH -n {STEP1_NPROCS}\n"
-    f"#SBATCH --time {STEP1_WALL}\n"
-    f"#SBATCH --mem {STEP1_MEM_GB}G\n"
+    f"#SBATCH -p qiita\n"
+    f"#SBATCH -N 1\n"
+    f"#SBATCH -n 16\n"
+    f"#SBATCH --time 1-00:00:00\n"
+    f"#SBATCH --mem 200G\n"
     "#SBATCH -o {out_dir}/step-1/logs/%x-%A_%a.out\n"
     "#SBATCH -e {out_dir}/step-1/logs/%x-%A_%a.err\n"
     "#SBATCH --array 1-{njobs}%16\n"
     "\n"
     "source ~/.bashrc\n"
     "set -e\n"
-    f"conda activate {CONDA_ENV}\n"
+    f"{CONDA_ENVIRONMENT}\n"
     "cd {out_dir}/step-1\n"
     "\n"
     "step=${{SLURM_ARRAY_TASK_ID}}\n"
@@ -65,8 +59,9 @@ STEP_1_EXP = (
     "${{SLURM_ARRAY_JOB_ID}}')\"\n"
     "fi\n"
     "\n"
-    f"hifiasm_meta -t {STEP1_NPROCS} -o "
-    "{out_dir}/step-1/${{sample_name}} ${{filename}}"
+    f"hifiasm_meta -t 16 -o "
+    "{out_dir}/step-1/${{sample_name}} ${{filename}}\n"
+    "touch {out_dir}/step-1/completed_${{SLURM_ARRAY_TASK_ID}}.log"
 )
 
 
@@ -167,9 +162,10 @@ class PacWoltkaProfilingTests(PacBioTests):
         out_dir = mkdtemp()
         self._clean_up_files.append(out_dir)
 
+        url = "https://test.test.edu/"
         # this should fail cause we don't have valid data
         main_fp, merge_fp = generate_minimap2_processing(
-            self.qclient, job_id, out_dir, params
+            self.qclient, job_id, out_dir, params, url
         )
         with open(main_fp, "r") as f:
             obs_main = f.readlines()
@@ -182,18 +178,18 @@ class PacWoltkaProfilingTests(PacBioTests):
             "#SBATCH -p qiita\n",
             "#SBATCH -N 1\n",
             "#SBATCH -n 16\n",
-            "#SBATCH --time 1000\n",
-            "#SBATCH --mem 120G\n",
+            "#SBATCH --time 36000\n",
+            "#SBATCH --mem 60G\n",
             f"#SBATCH -o {out_dir}/minimap2/logs/%x-%A_%a.out\n",
             f"#SBATCH -e {out_dir}/minimap2/logs/%x-%A_%a.err\n",
             "#SBATCH --array 1-2%16\n",
             "\n",
             "source ~/.bashrc\n",
             "set -e\n",
-            "conda activate qp_pacbio_2025.9\n",
+            f"{CONDA_ENVIRONMENT}\n",
             f"mkdir -p {out_dir}/alignments\n",
             f"cd {out_dir}/\n",
-            "db=/ddn_scratch/qiita_t/working_dir/tmp/db/WoLr2.mmi\n",
+            "db=/scratch/qp-pacbio/minimap2/WoLr2/WoLr2.map-hifi.mmi\n",
             "\n",
             "step=${SLURM_ARRAY_TASK_ID}\n",
             f"input=$(head -n $step {out_dir}/sample_list.txt | tail -n 1)\n",
@@ -206,33 +202,32 @@ class PacWoltkaProfilingTests(PacBioTests):
             "minimap2 -x map-hifi -t 16 -a \\\n",
             "       --secondary=no --MD --eqx ${db} \\\n",
             "       ${filename} | \\\n",
-            "   samtools sort -@ 16 - | \\\n",
             '   awk \'BEGIN { FS=OFS="\\t" } /^@/ { print; next } '
-            '{ $10="*"; $11="*" } 1\' | \\\n',
+            '{ $10="*"; $11="*" } 1\' | grep -v "^@" | sort -k 1 | \\\n',
             f"   xz -1 -T1 > {out_dir}/alignments/${{sample_name}}.sam.xz",
         ]
         self.assertEqual(obs_main, exp_main)
 
-        db_path = "/projects/wol/qiyun/wol2/databases/minimap2"
+        db_path = "/scratch/qp-woltka/WoLr2"
         exp_merge = [
             "#!/bin/bash\n",
             "#SBATCH -J me_my-job-id\n",
             "#SBATCH -p qiita\n",
             "#SBATCH -N 1\n",
             "#SBATCH -n 16\n",
-            "#SBATCH --time 1000\n",
+            "#SBATCH --time 1-00:00:00\n",
             "#SBATCH --mem 120G\n",
             f"#SBATCH -o {out_dir}/merge/logs/%x-%A_%a.out\n",
             f"#SBATCH -e {out_dir}/merge/logs/%x-%A_%a.err\n",
             "\n",
             "source ~/.bashrc\n",
             "set -e\n",
-            "conda activate qp_pacbio_2025.9\n",
+            f"{CONDA_ENVIRONMENT}\n",
             f"cd {out_dir}/\n",
             f"tax={db_path}/WoLr2.tax\n",
             f"coords={db_path}/WoLr2.coords\n",
-            f"len_map={db_path}/WoLr2/length.map\n",
-            f"functional_dir={db_path}/WoLr2/\n",
+            f"len_map={db_path}/genomes/length.map\n",
+            f"functional_dir={db_path}/function/kegg/\n",
             "\n",
             f"mkdir -p {out_dir}/coverages/\n",
             "\n",
@@ -245,12 +240,12 @@ class PacWoltkaProfilingTests(PacBioTests):
             f'--rank none --outcov {out_dir}/coverages/";\n',
             '    echo "woltka classify -i ${f} -o ${of}/per-gene.biom '
             '--no-demux -c ${coords}";\n',
-            "done | parallel -j 1\n",
+            "done | parallel -j 16\n",
             "wait\n",
             "\n",
             "for f in `ls bioms/*/per-gene.biom`; do\n",
             "    dn=`dirname ${f}`;\n",
-            "    sn=`basename ${sn}`;\n",
+            "    sn=`basename ${dn}`;\n",
             '    echo "woltka collapse -i ${f} -m ${functional_dir}/'
             'orf-to-ko.map.xz -o ${dn}/ko.biom; " \\\n',
             '        "woltka collapse -i ${dn}/ko.biom -m ${functional_dir}/'
@@ -263,11 +258,10 @@ class PacWoltkaProfilingTests(PacBioTests):
             '        "woltka collapse -i ${dn}/module.biom -m '
             "${functional_dir}/module-to-pathway.map "
             '-o ${dn}/pathway.biom;"\n',
-            "done | parallel -j 1\n",
+            "done | parallel -j 16\n",
             "wait\n",
             "\n",
-            "# MISSING:\n",
-            "# merge bioms!\n",
+            f"biom_merge_pacbio --base {out_dir}\n",
             "\n",
             (
                 f'find {out_dir}/coverages/ -iname "*.cov" '
@@ -277,7 +271,9 @@ class PacWoltkaProfilingTests(PacBioTests):
             f"--lengths ${{len_map}} --output {out_dir}/coverages.tgz\n",
             "\n",
             "cd alignments\n",
-            "tar -cvf ../alignments.tar *.sam.xz",
+            "tar -cvf ../alignments.tar *.sam.xz\n",
+            "\n",
+            f"finish_qp_pacbio {url} {job_id} {out_dir}",
         ]
         self.assertEqual(obs_merge, exp_merge)
 

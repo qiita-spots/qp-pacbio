@@ -11,7 +11,7 @@
 
 source ~/.bashrc
 set -e
-conda activate {{conda_environment}}
+{{conda_environment}}
 cd {{output}}
 
 step=${SLURM_ARRAY_TASK_ID}
@@ -30,7 +30,7 @@ folder=step-5/${sample_name}_refinement
 mkdir -p ${folder}
 
 ### make sure qiita have access to this DB path. Otherwise copy the folder to qiita-owned folders
-DAS_db=/ddn_scratch/qiita/databases/qp-pacbio/DAS_Tool/db/
+DAS_db=/scratch/qp-pacbio/DAS_Tool/db/
 cd {{output}}/step-4/${sample_name}_binning
 
 rm metabat2_bins/bin.unbinned.fa
@@ -46,3 +46,5 @@ Fasta_to_Contig2Bin.sh -i ./metabat2_bins -e fa | awk 'BEGIN{FS=OFS="\t"}{print 
 mkdir {{output}}/${folder}/${sample_name}
 
 DAS_Tool --bins=${sample_name}.concoct.tsv,${sample_name}.maxbin2.tsv,${sample_name}.metabat2.tsv --contigs={{output}}/step-2/${sample_name}_noLCG.fa --outputbasename={{output}}/${folder}/${sample_name}/${sample_name} --labels=CONCOCT,MaxBin,MetaBAT --threads={{nprocs}} --search_engine=diamond --dbDirectory=${DAS_db} --write_bins
+
+touch {{output}}/step-5/completed_${SLURM_ARRAY_TASK_ID}.log

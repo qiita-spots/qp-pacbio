@@ -1,0 +1,96 @@
+#!/bin/bash
+#SBATCH -J {{job_name}}
+#SBATCH -p qiita
+#SBATCH -N {{node_count}}
+#SBATCH -n {{nprocs}}
+#SBATCH --time {{wall_time_limit}}
+#SBATCH --mem {{mem_in_gb}}G
+#SBATCH -o {{output}}/step-2/logs/%x-%A_%a.out
+#SBATCH -e {{output}}/step-2/logs/%x-%A_%a.err
+#SBATCH --array {{array_params}}
+
+source ~/.bashrc
+set -e
+{{conda_environment}}
+cd {{output}}/step-1
+
+step=${SLURM_ARRAY_TASK_ID}
+input=$(head -n $step {{output}}/sample_list.txt | tail -n 1)
+sample_name=`echo $input | awk '{print $1}'`
+filename=`echo $input | awk '{print $2}'`
+fn=`basename ${filename}`
+
+# updating the GUI when task 1 runs
+if [[ "$step" == "1" ]]; then
+    python -c "from qp_pacbio.util import client_connect; qclient = client_connect('{{url}}'); qclient.update_job_step('{{qjid}}', 'Running step 2: ${SLURM_ARRAY_JOB_ID}')"
+fi
+
+cat ${sample_name}.p_ctg.gfa | awk '$1=="S" && ($2 ~ /.c$/) {printf ">%s\n%s\n", $2, $3} ' > ../step-2/${sample_name}_circ.fa
+seqkit split --by-id ../step-2/${sample_name}_circ.fa -O ../step-2/${sample_name}_split
+
+### get all contigs for each sample
+cat ${sample_name}.p_ctg.gfa | awk '$1=="S" {printf ">%s\n%s\n", $2, $3} ' > ../step-2/${sample_name}_all_contigs.fa
+
+cd ../step-2/${sample_name}_split
+# making a copy of the small_LCG before they are removed
+mkdir -p {{output}}/step-2/${sample_name}_small_LCG
+find . -maxdepth 1 -type f -size -512k -print0 | xargs -0 -r cp -t ../${sample_name}_small_LCG
+### remove small circular genomes
+find . -type f -size -512k -exec rm -f {} +
+
+# this can result on not having any files left so
+# making sure we have files left
+#
+# extract fasta id for all the genomes in the split folder
+FILES=(*.fa)
+if [ -f $FILES ]; then
+    for f in *.fa; do
+        k=${f##*/}
+        n=${f%.*}
+        grep -E "^>" $f >> circular_id.txt
+    done
+    sed -i 's/>//' circular_id.txt
+    seqkit grep -v -f circular_id.txt ../${sample_name}_all_contigs.fa > ../${sample_name}_noLCG.fa
+else
+    cp ../${sample_name}_all_contigs.fa ../${sample_name}_noLCG.fa
+fi
+
+lcg_folder={{result_fp}}/${sample_name}/LCG/
+mkdir -p ${lcg_folder}
+FILES=({{output}}/step-2/${sample_name}_split/*.fa)
+if [ -f $FILES ]; then
+    for f in `ls {{output}}/step-2/${sample_name}_split/*.fa`; do
+        sn=`basename ${f/_circ/}`;
+        sn=${sn/part_/};
+        cat $f | gzip > ${lcg_folder}/${sn/.fa/.fna}.gz;
+    done
+fi
+
+mkdir -p {{result_fp}}/${sample_name}/
+if [ -f {{output}}/step-2/${sample_name}_noLCG.fa ]; then
+    cat {{output}}/step-2/${sample_name}_noLCG.fa | gzip > {{result_fp}}/${sample_name}/${sample_name}.noLCG.fna.gz
+fi
+
+touch {{output}}/step-2/completed_${SLURM_ARRAY_TASK_ID}.log
+# if the files don't exist, it means that this step didn't generate any
+# inputs for the next step; thus generating all the completed files
+if [[ ! -f "$FILES" && ! -f "{{output}}/step-2/${sample_name}_noLCG.fa" ]]; then
+    touch {{output}}/step-3/completed_${SLURM_ARRAY_TASK_ID}.log
+    touch {{output}}/step-4/completed_${SLURM_ARRAY_TASK_ID}.log
+    touch {{output}}/step-5/completed_${SLURM_ARRAY_TASK_ID}.log
+    touch {{output}}/step-6/completed_${SLURM_ARRAY_TASK_ID}.log
+    touch {{output}}/step-7/completed_${SLURM_ARRAY_TASK_ID}.log
+fi
+
+# saving small LCG, note that these are not processed downstrem so not
+# relevant to the "complete" files
+small_lcg_folder={{result_fp}}/${sample_name}/small_LCG/
+mkdir -p ${small_lcg_folder}
+FILES=({{output}}/step-2/${sample_name}_small_LCG/*.fa)
+if [ -f $FILES ]; then
+    for f in `ls {{output}}/step-2/${sample_name}_small_LCG/*.fa`; do
+        sn=`basename ${f/_circ/}`;
+        sn=${sn/part_/};
+        cat $f | gzip > ${small_lcg_folder}/${sn/.fa/.fna}.gz;
+    done
+fi

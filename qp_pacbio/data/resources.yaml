@@ -1,0 +1,60 @@
+PacBio processing:
+  step-1:
+    node_count: 1
+    nprocs: 16
+    wall_time_limit: 1-00:00:00
+    mem_in_gb: 200
+    max_tasks: 16
+  step-2:
+    node_count: 1
+    nprocs: 1
+    wall_time_limit: 00:10:00
+    mem_in_gb: 2
+    max_tasks: 16
+  step-3:
+    node_count: 1
+    nprocs: 8
+    wall_time_limit: 01:00:00
+    mem_in_gb: 10
+    max_tasks: 16
+  step-4:
+    node_count: 1
+    nprocs: 8
+    wall_time_limit: 01:00:00
+    mem_in_gb: 6
+    max_tasks: 16
+  step-5:
+    node_count: 1
+    nprocs: 8
+    wall_time_limit: 00:30:00
+    mem_in_gb: 2
+    max_tasks: 16
+  step-6:
+    node_count: 1
+    nprocs: 8
+    wall_time_limit: 00:30:00
+    mem_in_gb: 2
+    max_tasks: 16
+  step-7:
+    node_count: 1
+    nprocs: 8
+    wall_time_limit: 01:00:00
+    mem_in_gb: 50
+    max_tasks: 16
+  finish:
+    node_count: 1
+    nprocs: 1
+    wall_time_limit: 00:10:00
+    mem_in_gb: 10
+Woltka v0.1.7, minimap2:
+  minimap2:
+    node_count: 1
+    nprocs: 16
+    wall_time_limit: 10:00:00
+    mem_in_gb: 60
+    max_tasks: 16
+  merge:
+    node_count: 1
+    nprocs: 16
+    wall_time_limit: 1-00:00:00
+    mem_in_gb: 120

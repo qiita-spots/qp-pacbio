@@ -6,20 +6,24 @@
 # The full license is in the file LICENSE, distributed with this software.
 # -----------------------------------------------------------------------------
 from os import makedirs, mkdir
-from os.path import basename, join, exists, getmtime
-import pathlib
+from os.path import basename, join, exists
 from shutil import copy2
+from glob import glob
 
-
-from jinja2 import Environment, BaseLoader, TemplateNotFound
+import yaml
+from os import environ
+from jinja2 import Environment
 from qiita_client import ArtifactInfo
 from subprocess import run
 
+from .util import KISSLoader, find_base_path
 
-CONDA_ENV = "qp_pacbio_2025.9"
-MAX_WALL_1000 = 1000
-MAX_WALL_500 = 500
-T5_NAME = "5.DAS_Tools_prepare_batch3_test.sbatch"
+
+JENV = Environment(loader=KISSLoader("data/templates"))
+JGT = JENV.get_template
+RESOURCES = yaml.safe_load(open(join(find_base_path(), "data/resources.yaml")))
+CONDA_ENVIRONMENT = environ["ENVIRONMENT"]
+PACBIO_PROCESSING_STEPS = 7
 
 
 def sbatch(args):
@@ -51,23 +55,6 @@ def search_by_filename(fname, lookup):
     raise KeyError("Cannot determine run_prefix for %s" % original)
 
 
-# taken from the Jinja docs (BaseLoader API):
-# https://jinja.palletsprojects.com/en/3.0.x/api/
-class KISSLoader(BaseLoader):
-    def __init__(self, path):
-        base = pathlib.Path(__file__).parent.resolve()
-        self.path = join(base, path)
-
-    def get_source(self, environment, template):
-        path = join(self.path, template)
-        if not exists(path):
-            raise TemplateNotFound(template)
-        mtime = getmtime(path)
-        with open(path, encoding="utf-8") as f:
-            source = f.read()
-        return source, path, lambda: mtime == getmtime(path)
-
-
 def _write_slurm(path, template, **ctx):
     makedirs(path, exist_ok=True)
     makedirs(join(path, "logs"), exist_ok=True)
@@ -95,145 +82,118 @@ def pacbio_generate_templates(out_dir, job_id, njobs, result_fp, url):
     url : str
         URL to update the status of the jobs
     """
-    jinja_env = Environment(loader=KISSLoader("../data/templates"))
+    resources = RESOURCES["PacBio processing"]
+
+    main_parameters = {
+        "conda_environment": CONDA_ENVIRONMENT,
+        "output": out_dir,
+        "url": url,
+        "qjid": job_id,
+        "result_fp": result_fp,
+    }
 
     # Step 1
-    template1 = jinja_env.get_template("1.hifiasm-meta_new.sbatch")
-    _write_slurm(
-        join(out_dir, "step-1"),
-        template1,
-        conda_environment=CONDA_ENV,
-        output=out_dir,
-        job_name=f"s1-{job_id}",
-        node_count=1,
-        nprocs=16,
-        wall_time_limit=MAX_WALL_1000,
-        mem_in_gb=300,
-        array_params=f"1-{njobs}%16",
-        url=url,
-        qjid=job_id,
-    )
+    template1 = JGT("1.hifiasm-meta_new.sbatch")
+    step_resources = resources["step-1"]
+    params = main_parameters | {
+        "job_name": f"s1-{job_id}",
+        "node_count": step_resources["node_count"],
+        "nprocs": step_resources["nprocs"],
+        "wall_time_limit": step_resources["wall_time_limit"],
+        "mem_in_gb": step_resources["mem_in_gb"],
+        "array_params": f"1-{njobs}%{step_resources['max_tasks']}",
+    }
+    _write_slurm(join(out_dir, "step-1"), template1, **params)
 
     # Step 2
-    template2 = jinja_env.get_template("2.get-circular-genomes.sbatch")
-    _write_slurm(
-        join(out_dir, "step-2"),
-        template2,
-        conda_environment=CONDA_ENV,
-        output=out_dir,
-        job_name=f"s2-{job_id}",
-        node_count=1,
-        nprocs=1,
-        wall_time_limit=MAX_WALL_500,
-        mem_in_gb=16,
-        array_params=f"1-{njobs}%16",
-        result_fp=result_fp,
-        url=url,
-        qjid=job_id,
-    )
+    template2 = JGT("2.get-circular-genomes.sbatch")
+    step_resources = resources["step-2"]
+    params = main_parameters | {
+        "job_name": f"s2-{job_id}",
+        "node_count": step_resources["node_count"],
+        "nprocs": step_resources["nprocs"],
+        "wall_time_limit": step_resources["wall_time_limit"],
+        "mem_in_gb": step_resources["mem_in_gb"],
+        "array_params": f"1-{njobs}%{step_resources['max_tasks']}",
+    }
+    _write_slurm(join(out_dir, "step-2"), template2, **params)
 
     # Step 3
-    template3 = jinja_env.get_template("3.minimap2_assembly.sbatch")
-    _write_slurm(
-        join(out_dir, "step-3"),
-        template3,
-        conda_environment=CONDA_ENV,
-        output=out_dir,
-        job_name=f"s3-{job_id}",
-        node_count=1,
-        nprocs=8,
-        wall_time_limit=MAX_WALL_500,
-        mem_in_gb=50,
-        array_params=f"1-{njobs}%16",
-        url=url,
-        qjid=job_id,
-    )
+    template3 = JGT("3.minimap2_assembly.sbatch")
+    step_resources = resources["step-3"]
+    params = main_parameters | {
+        "job_name": f"s3-{job_id}",
+        "node_count": step_resources["node_count"],
+        "nprocs": step_resources["nprocs"],
+        "wall_time_limit": step_resources["wall_time_limit"],
+        "mem_in_gb": step_resources["mem_in_gb"],
+        "array_params": f"1-{njobs}%{step_resources['max_tasks']}",
+    }
+    _write_slurm(join(out_dir, "step-3"), template3, **params)
 
     # Step 4
-    template4 = jinja_env.get_template("4.metawrap_binning_new.sbatch")
-    _write_slurm(
-        join(out_dir, "step-4"),
-        template4,
-        conda_environment=CONDA_ENV,
-        output=out_dir,
-        job_name=f"s4-{job_id}",
-        node_count=1,
-        nprocs=8,
-        wall_time_limit=MAX_WALL_500,
-        mem_in_gb=50,
-        array_params=f"1-{njobs}%16",
-        url=url,
-        qjid=job_id,
-    )
+    template4 = JGT("4.metawrap_binning_new.sbatch")
+    step_resources = resources["step-4"]
+    params = main_parameters | {
+        "job_name": f"s4-{job_id}",
+        "node_count": step_resources["node_count"],
+        "nprocs": step_resources["nprocs"],
+        "wall_time_limit": step_resources["wall_time_limit"],
+        "mem_in_gb": step_resources["mem_in_gb"],
+        "array_params": f"1-{njobs}%{step_resources['max_tasks']}",
+    }
+    _write_slurm(join(out_dir, "step-4"), template4, **params)
 
     # Step 5 (long filename isolated in T5_NAME)
-    template5 = jinja_env.get_template(T5_NAME)
-    _write_slurm(
-        join(out_dir, "step-5"),
-        template5,
-        conda_environment=CONDA_ENV,
-        output=out_dir,
-        job_name=f"s5-{job_id}",
-        node_count=1,
-        nprocs=8,
-        wall_time_limit=MAX_WALL_500,
-        mem_in_gb=50,
-        array_params=f"1-{njobs}%16",
-        url=url,
-        qjid=job_id,
-    )
+    template5 = JGT("5.DAS_Tools_prepare_batch3_test.sbatch")
+    step_resources = resources["step-5"]
+    params = main_parameters | {
+        "job_name": f"s5-{job_id}",
+        "node_count": step_resources["node_count"],
+        "nprocs": step_resources["nprocs"],
+        "wall_time_limit": step_resources["wall_time_limit"],
+        "mem_in_gb": step_resources["mem_in_gb"],
+        "array_params": f"1-{njobs}%{step_resources['max_tasks']}",
+    }
+    _write_slurm(join(out_dir, "step-5"), template5, **params)
 
     # Step 6
-    template6 = jinja_env.get_template("6.MAG_rename.sbatch")
-    _write_slurm(
-        join(out_dir, "step-6"),
-        template6,
-        conda_environment=CONDA_ENV,
-        output=out_dir,
-        job_name=f"s6-{job_id}",
-        node_count=1,
-        nprocs=8,
-        wall_time_limit=MAX_WALL_500,
-        mem_in_gb=50,
-        array_params=f"1-{njobs}%16",
-        result_fp=result_fp,
-        url=url,
-        qjid=job_id,
-    )
+    template6 = JGT("6.MAG_rename.sbatch")
+    step_resources = resources["step-6"]
+    params = main_parameters | {
+        "job_name": f"s6-{job_id}",
+        "node_count": step_resources["node_count"],
+        "nprocs": step_resources["nprocs"],
+        "wall_time_limit": step_resources["wall_time_limit"],
+        "mem_in_gb": step_resources["mem_in_gb"],
+        "array_params": f"1-{njobs}%{step_resources['max_tasks']}",
+    }
+    _write_slurm(join(out_dir, "step-6"), template6, **params)
 
     # Step 7
-    template7 = jinja_env.get_template("7.checkm_batch.sbatch")
-    _write_slurm(
-        join(out_dir, "step-7"),
-        template7,
-        conda_environment=CONDA_ENV,
-        output=out_dir,
-        job_name=f"s7-{job_id}",
-        node_count=1,
-        nprocs=8,
-        wall_time_limit=MAX_WALL_500,
-        mem_in_gb=50,
-        array_params=f"1-{njobs}%16",
-        result_fp=result_fp,
-        url=url,
-        qjid=job_id,
-    )
+    template7 = JGT("7.checkm_batch.sbatch")
+    step_resources = resources["step-7"]
+    params = main_parameters | {
+        "job_name": f"s7-{job_id}",
+        "node_count": step_resources["node_count"],
+        "nprocs": step_resources["nprocs"],
+        "wall_time_limit": step_resources["wall_time_limit"],
+        "mem_in_gb": step_resources["mem_in_gb"],
+        "array_params": f"1-{njobs}%{step_resources['max_tasks']}",
+    }
+    _write_slurm(join(out_dir, "step-7"), template7, **params)
 
     # finish command - letting qiita know that we are done
-    finish = jinja_env.get_template("finish.pacbio.processing.sbatch")
-    _write_slurm(
-        join(out_dir, "finish"),
-        finish,
-        conda_environment=CONDA_ENV,
-        output=out_dir,
-        job_name=f"f-{job_id}",
-        node_count=1,
-        nprocs=1,
-        wall_time_limit=MAX_WALL_500,
-        mem_in_gb=50,
-        url=url,
-        qjid=job_id,
-    )
+    finish = JGT("finish.pacbio.processing.sbatch")
+    step_resources = resources["finish"]
+    params = main_parameters | {
+        "job_name": f"f-{job_id}",
+        "node_count": step_resources["node_count"],
+        "nprocs": step_resources["nprocs"],
+        "wall_time_limit": step_resources["wall_time_limit"],
+        "mem_in_gb": step_resources["mem_in_gb"],
+    }
+    _write_slurm(join(out_dir, "finish"), finish, **params)
 
 
 def generate_sample_list(qclient, artifact_id, out_dir):
@@ -292,6 +252,22 @@ def pacbio_processing(qclient, job_id, parameters, out_dir):
     makedirs(result_fp, exist_ok=True)
 
     qclient.update_job_step(job_id, "Commands finished")
+    # validating that all steps are complete
+    with open(join(out_dir, "sample_list.txt"), "r") as fp:
+        expected = len(fp.readlines())
+
+    failed_steps = []
+    for step_id in range(1, PACBIO_PROCESSING_STEPS + 1, 1):
+        obs = glob(join(out_dir, f"step-{step_id}", "completed_*.log"))
+        if len(obs) != expected:
+            failed_steps.append(str(step_id))
+    if failed_steps:
+        failed_steps = ", ".join(failed_steps)
+        message = (
+            "These steps have less than expected logs: "
+            f" {failed_steps}; please email the admin"
+        )
+        return (False, [], message)
 
     paths = [(f"{result_fp}/", "directory")]
     return (
@@ -334,7 +310,7 @@ def minimap2_processing(qclient, job_id, parameters, out_dir):
     ainfo = []
 
     fp_biom = f"{out_dir}/none.biom"
-    fp_alng = f"{out_dir}/alignment.tar"
+    fp_alng = f"{out_dir}/alignments.tar"
     if exists(fp_biom) and exists(fp_alng):
         ainfo.append(
             ArtifactInfo(
@@ -383,7 +359,7 @@ def minimap2_processing(qclient, job_id, parameters, out_dir):
         return True, ainfo, ""
 
 
-def generate_minimap2_processing(qclient, job_id, out_dir, parameters):
+def generate_minimap2_processing(qclient, job_id, out_dir, parameters, url):
     """generates slurm scripts for minimap2/woltka processing.
 
     Parameters
@@ -396,12 +372,21 @@ def generate_minimap2_processing(qclient, job_id, out_dir, parameters):
         Output directory.
     parameters : dict
         Parameters for this job.
+    url : str
+        URL to send the respose, finish the job.
 
     Returns
     -------
     str, str
         Returns the two filepaths of the slurm scripts
     """
+    resources = RESOURCES["Woltka v0.1.7, minimap2"]
+    main_parameters = {
+        "conda_environment": CONDA_ENVIRONMENT,
+        "output": out_dir,
+        "qjid": job_id,
+    }
+
     qclient.update_job_step(
         job_id, "Step 1 of 4: Collecting info and generating submission"
     )
@@ -415,32 +400,29 @@ def generate_minimap2_processing(qclient, job_id, out_dir, parameters):
         "Step 2 of 4: Creating submission templates",
     )
 
-    jinja_env = Environment(loader=KISSLoader("../data/templates"))
-    GT = jinja_env.get_template
-    minimap2_template = GT("woltka_minimap2.sbatch")
-    minimap2_script = _write_slurm(
-        f"{out_dir}/minimap2",
-        minimap2_template,
-        conda_environment=CONDA_ENV,
-        output=out_dir,
-        job_name=f"m2_{job_id}",
-        node_count=1,
-        nprocs=16,
-        wall_time_limit=MAX_WALL_1000,
-        mem_in_gb=120,
-        array_params=f"1-{njobs}%16",
-    )
-    minimap2_merge_template = GT("woltka_minimap2_merge.sbatch")
-    minimap2_merge_script = _write_slurm(
-        f"{out_dir}/merge",
-        minimap2_merge_template,
-        conda_environment=CONDA_ENV,
-        output=out_dir,
-        job_name=f"me_{job_id}",
-        node_count=1,
-        nprocs=16,
-        wall_time_limit=MAX_WALL_1000,
-        mem_in_gb=120,
-    )
+    m2t = JGT("woltka_minimap2.sbatch")
+    step_resources = resources["minimap2"]
+    params = main_parameters | {
+        "job_name": f"m2_{job_id}",
+        "node_count": step_resources["node_count"],
+        "nprocs": step_resources["nprocs"],
+        "wall_time_limit": step_resources["wall_time_limit"],
+        "mem_in_gb": step_resources["mem_in_gb"],
+        "array_params": f"1-{njobs}%{step_resources['max_tasks']}",
+    }
+    minimap2_script = _write_slurm(f"{out_dir}/minimap2", m2t, **params)
+
+    m2mt = JGT("woltka_minimap2_merge.sbatch")
+    step_resources = resources["merge"]
+    params = main_parameters | {
+        "job_name": f"me_{job_id}",
+        "node_count": step_resources["node_count"],
+        "nprocs": step_resources["nprocs"],
+        "wall_time_limit": step_resources["wall_time_limit"],
+        "mem_in_gb": step_resources["mem_in_gb"],
+        "url": url,
+    }
+    step_resources = resources["merge"]
+    minimap2_merge_script = _write_slurm(f"{out_dir}/merge", m2mt, **params)
 
     return minimap2_script, minimap2_merge_script

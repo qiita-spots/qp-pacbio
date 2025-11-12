@@ -9,11 +9,17 @@
 import click
 from os import makedirs
 from os.path import join
+import biom as _biom
+from glob import glob
+import h5py
+
+
 from qp_pacbio import plugin
 from qp_pacbio.qp_pacbio import (
     generate_minimap2_processing,
     generate_sample_list,
     pacbio_generate_templates,
+    PACBIO_PROCESSING_STEPS,
 )
 from qp_pacbio.util import client_connect
 from subprocess import run, PIPE
@@ -52,7 +58,7 @@ def execute(url, job_id, output_dir):
 
         if command == "Woltka v0.1.7, minimap2":
             main_fp, merge_fp = generate_minimap2_processing(
-                qclient, job_id, output_dir, parameters
+                qclient, job_id, output_dir, parameters, url
             )
 
             # Submitting jobs and returning id
@@ -72,10 +78,8 @@ def execute(url, job_id, output_dir):
             njobs = generate_sample_list(qclient, artifact_id, output_dir)
             pacbio_generate_templates(output_dir, job_id, njobs, frp, url)
 
-            total_steps = 7
-
             all_jids = []
-            for step_id in range(1, total_steps + 1, 1):
+            for step_id in range(1, PACBIO_PROCESSING_STEPS + 1, 1):
                 cmd = [
                     "sbatch",
                     "--parsable",
@@ -92,7 +96,7 @@ def execute(url, job_id, output_dir):
                 "sbatch",
                 "--parsable",
                 "--dependency",
-                f"afterok:{all_jids[-1]}",
+                f"afterany:{all_jids[-1]}",
                 f"{output_dir}/finish/finish.slurm",
             ]
             task = run(cmd, stdout=PIPE)
@@ -111,3 +115,47 @@ def execute(url, job_id, output_dir):
 def finish_qp_pacbio(url, job_id, output_dir):
     """Executes the task given by job_id and puts the output in output_dir"""
     plugin(url, job_id, output_dir)
+
+
+@click.command()
+@click.option("--base", type=click.Path(exists=True), required=True)
+def biom_merge(base):
+    """Merges all PacBio biom tables"""
+    chunk_size = 30
+    for rank in ("none", "per-gene", "ko", "ec", "pathway"):
+        rank = rank + ".biom"
+        tables = glob(f"{base}/bioms/*/{rank}")
+
+        if not tables:
+            continue
+
+        full = None
+        for block in range(0, len(tables), chunk_size):
+            lblock = block + chunk_size
+            chunk = tables[block:lblock]
+            loaded = []
+            for c in chunk:
+                skip = True
+                if _biom.util.is_hdf5_file(c):
+                    skip = False
+                else:
+                    with open(c) as fh:
+                        for i, l in enumerate(fh):
+                            if i >= 1 and l:
+                                skip = False
+                                break
+                if not skip:
+                    temp = _biom.load_table(c)
+                    if temp.shape != (0, 0):
+                        loaded.append(temp)
+
+            if full is None:
+                if len(loaded) == 1:
+                    full = loaded[0]
+                else:
+                    full = loaded[0].concat(loaded[1:])
+            else:
+                full = full.concat(loaded)
+
+        with h5py.File(f"{base}/{rank}", "w") as out:
+            full.to_hdf5(out, "fast-merge")

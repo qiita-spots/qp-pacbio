@@ -11,7 +11,7 @@
 
 source ~/.bashrc
 set -e
-conda activate {{conda_environment}}
+{{conda_environment}}
 cd {{output}}/step-1
 
 step=${SLURM_ARRAY_TASK_ID}
@@ -28,3 +28,4 @@ if [[ "$step" == "1" ]]; then
 fi
 
 hifiasm_meta -t {{nprocs}} -o {{output}}/step-1/${sample_name} ${filename}
+touch {{output}}/step-1/completed_${SLURM_ARRAY_TASK_ID}.log

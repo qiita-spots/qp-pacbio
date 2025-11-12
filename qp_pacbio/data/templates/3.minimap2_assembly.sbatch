@@ -11,7 +11,7 @@
 
 source ~/.bashrc
 set -e
-conda activate {{conda_environment}}
+{{conda_environment}}
 cd {{output}}
 
 step=${SLURM_ARRAY_TASK_ID}
@@ -28,5 +28,14 @@ fi
 
 folder=step-3/${sample_name}_binning
 mkdir -p ${folder}
-minimap2 -x map-hifi -t {{nprocs}} -a --MD --eqx -o ${folder}/${sample_name}.sam step-2/${sample_name}_noLCG.fa ${filename}
-samtools view -bS -@4 ${folder}/${sample_name}.sam | samtools sort -@4 -O bam -o ${folder}/${sample_name}.sorted.bam
+
+if [ -f step-2/${sample_name}_noLCG.fa ]; then
+    minimap2 -x map-hifi -I {{mem_in_gb}}G -t {{nprocs}} -a --MD --eqx -o ${folder}/${sample_name}.sam step-2/${sample_name}_noLCG.fa ${filename}
+    samtools view -bS -@4 ${folder}/${sample_name}.sam | samtools sort -@4 -O bam -o ${folder}/${sample_name}.sorted.bam
+else
+    touch {{output}}/step-4/completed_${SLURM_ARRAY_TASK_ID}.log
+    touch {{output}}/step-5/completed_${SLURM_ARRAY_TASK_ID}.log
+    touch {{output}}/step-6/completed_${SLURM_ARRAY_TASK_ID}.log
+    touch {{output}}/step-7/completed_${SLURM_ARRAY_TASK_ID}.log
+fi
+touch {{output}}/step-3/completed_${SLURM_ARRAY_TASK_ID}.log

@@ -11,7 +11,7 @@
 
 source ~/.bashrc
 set -e
-conda activate {{conda_environment}}
+{{conda_environment}}
 cd {{output}}
 
 step=${SLURM_ARRAY_TASK_ID}
@@ -44,3 +44,5 @@ for f in `ls {{output}}/step-6/${sample_name}_MAG_rename/${sample_name}*.fa`; do
     sn=`basename ${f}`;
     cat $f | gzip > ${mag_folder}/${sn/.fa/.fna}.gz;
 done
+
+touch {{output}}/step-6/completed_${SLURM_ARRAY_TASK_ID}.log

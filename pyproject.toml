@@ -4,13 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 packages = ["qp_pacbio"]
-include-package-data = true
+
+[tool.setuptools.package-data]
+"qp_pacbio" = ["data/*"]
 
 [project]
 name = "qp_pacbio"
 # version strings must comply with PEP 440:
 # https://peps.python.org/pep-0440/
-version = "2025.09"
+version = "2025.11"
 authors = [{ name = "Qiita Development Team", email = "qiita.help@gmail.com" }]
 description = "Qiita Plugin: PacBio Processing"
 readme = "README.rst"
@@ -39,11 +41,15 @@ dependencies = [
     'pytest-cov',
     'numpy',
     'Jinja2',
+    'PyYAML',
+    'micov',
     "qiita-files@https://github.com/qiita-spots/qiita-files/archive/master.zip",
     "qiita_client@https://github.com/qiita-spots/qiita_client/archive/master.zip",
+    "woltka@git+https://github.com/qiyunzhu/woltka.git#egg=woltka",
 ]
 
 [project.scripts]
 configure_qp_pacbio = "qp_pacbio.scripts:config"
 start_qp_pacbio = "qp_pacbio.scripts:execute"
 finish_qp_pacbio = "qp_pacbio.scripts:finish_qp_pacbio"
+biom_merge_pacbio = "qp_pacbio.scripts:biom_merge"
