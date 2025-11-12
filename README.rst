@@ -7,7 +7,7 @@ This plugin currently provides 2 commands for Qiita:
 * **Woltka v0.1.7, minimap2**: which generates feature and functional profiles agains WoLr2;
   the expected output are BIOM artifacts
 
-* "PacBio processing": which goes from step 1 to 7 in the image below. The expected output
+* **PacBio processing**: which goes from step 1 to 7 in the image below. The expected output
   is a main folder with folders per-sample and folders for each of the different outputs, as follows:
 
   * MAG folder: all Metagenome-Assembled Genome (MAG) generatedfor that sample
