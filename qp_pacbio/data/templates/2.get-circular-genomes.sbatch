@@ -26,6 +26,7 @@ if [[ "$step" == "1" ]]; then
 fi
 
 function finish_when_error {
+    touch {{output}}/step-2/completed_${SLURM_ARRAY_TASK_ID}.log
     touch {{output}}/step-3/completed_${SLURM_ARRAY_TASK_ID}.log
     touch {{output}}/step-4/completed_${SLURM_ARRAY_TASK_ID}.log
     touch {{output}}/step-5/completed_${SLURM_ARRAY_TASK_ID}.log
@@ -83,7 +84,6 @@ if [ -f {{output}}/step-2/${sample_name}_noLCG.fa ]; then
     cat {{output}}/step-2/${sample_name}_noLCG.fa | gzip > {{result_fp}}/${sample_name}/${sample_name}.noLCG.fna.gz
 fi
 
-touch {{output}}/step-2/completed_${SLURM_ARRAY_TASK_ID}.log
 # if the files don't exist, it means that this step didn't generate any
 # inputs for the next step; thus generating all the completed files
 if [[ ! -f "$FILES" && ! -f "{{output}}/step-2/${sample_name}_noLCG.fa" ]]; then
@@ -102,3 +102,4 @@ if [ -f $FILES ]; then
         cat $f | gzip > ${small_lcg_folder}/${sn/.fa/.fna}.gz;
     done
 fi
+touch {{output}}/step-2/completed_${SLURM_ARRAY_TASK_ID}.log
