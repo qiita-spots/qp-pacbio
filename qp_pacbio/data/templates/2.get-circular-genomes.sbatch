@@ -60,7 +60,6 @@ if [ -f $FILES ]; then
     sed -i 's/>//' circular_id.txt
     seqkit grep -v -f circular_id.txt ../${sample_name}_all_contigs.fa > ../${sample_name}_noLCG.fa
 else
-    cp ../${sample_name}_all_contigs.fa ../${sample_name}_noLCG.fa
     if [ ! -s "../${sample_name}_all_contigs.fa" ]; then
         finish_when_error
         exit 1
