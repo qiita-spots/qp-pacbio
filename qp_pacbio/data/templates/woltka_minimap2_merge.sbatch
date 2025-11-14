@@ -19,7 +19,7 @@ functional_dir=/scratch/qp-woltka/WoLr2/function/kegg/
 
 mkdir -p {{output}}/coverages/
 
-for f in `ls alignments/*.sam.xz`; do
+for f in `ls alignment/*.sam.xz`; do
     sn=`basename ${f/.sam.xz/}`;
     of={{output}}/bioms/${sn};
     mkdir -p ${of};
@@ -44,7 +44,7 @@ biom_merge_pacbio --base {{output}}
 find {{output}}/coverages/ -iname "*.cov" > {{output}}/cov_files.txt
 micov consolidate --paths {{output}}/cov_files.txt --lengths ${len_map} --output {{output}}/coverages.tgz
 
-cd alignments
-tar -cvf ../alignments.tar *.sam.xz
+cd alignment
+tar -cvf ../alignment.tar *.sam.xz
 
 finish_qp_pacbio {{url}} {{qjid}} {{output}}

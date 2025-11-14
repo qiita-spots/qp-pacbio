@@ -5,19 +5,17 @@
 #
 # The full license is in the file LICENSE, distributed with this software.
 # -----------------------------------------------------------------------------
-from os import makedirs, mkdir
-from os.path import basename, join, exists
-from shutil import copy2
 from glob import glob
-
-import yaml
-from os import environ
-from jinja2 import Environment
-from qiita_client import ArtifactInfo
+from os import environ, makedirs, mkdir
+from os.path import basename, exists, join
+from shutil import copy2
 from subprocess import run
 
-from .util import KISSLoader, find_base_path
+import yaml
+from jinja2 import Environment
+from qiita_client import ArtifactInfo
 
+from .util import KISSLoader, find_base_path
 
 JENV = Environment(loader=KISSLoader("data/templates"))
 JGT = JENV.get_template
@@ -310,7 +308,7 @@ def minimap2_processing(qclient, job_id, parameters, out_dir):
     ainfo = []
 
     fp_biom = f"{out_dir}/none.biom"
-    fp_alng = f"{out_dir}/alignments.tar"
+    fp_alng = f"{out_dir}/alignment.tar"
     if exists(fp_biom) and exists(fp_alng):
         ainfo.append(
             ArtifactInfo(

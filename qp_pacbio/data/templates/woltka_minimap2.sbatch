@@ -12,7 +12,7 @@
 source ~/.bashrc
 set -e
 {{conda_environment}}
-mkdir -p {{output}}/alignments
+mkdir -p {{output}}/alignment
 cd {{output}}/
 db=/scratch/qp-pacbio/minimap2/WoLr2/WoLr2.map-hifi.mmi
 
@@ -28,4 +28,4 @@ minimap2 -x map-hifi -t {{nprocs}} -a \
        --secondary=no --MD --eqx ${db} \
        ${filename} | \
    awk 'BEGIN { FS=OFS="\t" } /^@/ { print; next } { $10="*"; $11="*" } 1' | grep -v "^@" | sort -k 1 | \
-   xz -1 -T1 > {{output}}/alignments/${sample_name}.sam.xz
+   xz -1 -T1 > {{output}}/alignment/${sample_name}.sam.xz

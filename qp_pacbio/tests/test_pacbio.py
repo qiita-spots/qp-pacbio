@@ -17,12 +17,11 @@ from qiita_client.testing import PluginTestCase
 
 from qp_pacbio import plugin
 from qp_pacbio.qp_pacbio import (
+    CONDA_ENVIRONMENT,
     generate_minimap2_processing,
     generate_sample_list,
     pacbio_generate_templates,
-    CONDA_ENVIRONMENT,
 )
-
 
 # Exact expected Step-1 script matching your template.
 # Escape ${...} -> ${{...}} and awk braces -> '{{print $1}}' etc.
@@ -187,7 +186,7 @@ class PacWoltkaProfilingTests(PacBioTests):
             "source ~/.bashrc\n",
             "set -e\n",
             f"{CONDA_ENVIRONMENT}\n",
-            f"mkdir -p {out_dir}/alignments\n",
+            f"mkdir -p {out_dir}/alignment\n",
             f"cd {out_dir}/\n",
             "db=/scratch/qp-pacbio/minimap2/WoLr2/WoLr2.map-hifi.mmi\n",
             "\n",
@@ -204,7 +203,7 @@ class PacWoltkaProfilingTests(PacBioTests):
             "       ${filename} | \\\n",
             '   awk \'BEGIN { FS=OFS="\\t" } /^@/ { print; next } '
             '{ $10="*"; $11="*" } 1\' | grep -v "^@" | sort -k 1 | \\\n',
-            f"   xz -1 -T1 > {out_dir}/alignments/${{sample_name}}.sam.xz",
+            f"   xz -1 -T1 > {out_dir}/alignment/${{sample_name}}.sam.xz",
         ]
         self.assertEqual(obs_main, exp_main)
 
@@ -231,7 +230,7 @@ class PacWoltkaProfilingTests(PacBioTests):
             "\n",
             f"mkdir -p {out_dir}/coverages/\n",
             "\n",
-            "for f in `ls alignments/*.sam.xz`; do\n",
+            "for f in `ls alignment/*.sam.xz`; do\n",
             "    sn=`basename ${f/.sam.xz/}`;\n",
             f"    of={out_dir}/bioms/${{sn}};\n",
             "    mkdir -p ${of};\n",
@@ -270,8 +269,8 @@ class PacWoltkaProfilingTests(PacBioTests):
             f"micov consolidate --paths {out_dir}/cov_files.txt "
             f"--lengths ${{len_map}} --output {out_dir}/coverages.tgz\n",
             "\n",
-            "cd alignments\n",
-            "tar -cvf ../alignments.tar *.sam.xz\n",
+            "cd alignment\n",
+            "tar -cvf ../alignment.tar *.sam.xz\n",
             "\n",
             f"finish_qp_pacbio {url} {job_id} {out_dir}",
         ]
