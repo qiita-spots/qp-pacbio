@@ -19,13 +19,13 @@ functional_dir=/scratch/qp-woltka/WoLr2/function/kegg/
 
 mkdir -p {{output}}/coverages/
 
-for f in `ls alignments/*.sam.xz`; do
+for f in `ls alignment/*.sam.xz`; do
     sn=`basename ${f/.sam.xz/}`;
     of={{output}}/bioms/${sn};
     mkdir -p ${of};
     echo "woltka classify -i ${f} -o ${of}/none.biom --no-demux --lineage ${tax} --rank none --outcov {{output}}/coverages/";
     echo "woltka classify -i ${f} -o ${of}/per-gene.biom --no-demux -c ${coords}";
-done | parallel -j {{nprocs}}
+done | parallel --halt now,fail=1 -j {{nprocs}}
 wait
 
 for f in `ls bioms/*/per-gene.biom`; do
@@ -36,7 +36,7 @@ for f in `ls bioms/*/per-gene.biom`; do
         "woltka collapse -i ${dn}/ko.biom -m ${functional_dir}/ko-to-reaction.map -o ${dn}/reaction.biom; " \
         "woltka collapse -i ${dn}/reaction.biom -m ${functional_dir}/reaction-to-module.map -o ${dn}/module.biom; " \
         "woltka collapse -i ${dn}/module.biom -m ${functional_dir}/module-to-pathway.map -o ${dn}/pathway.biom;"
-done | parallel -j {{nprocs}}
+done | parallel --halt now,fail=1 -j {{nprocs}}
 wait
 
 biom_merge_pacbio --base {{output}}
@@ -44,7 +44,7 @@ biom_merge_pacbio --base {{output}}
 find {{output}}/coverages/ -iname "*.cov" > {{output}}/cov_files.txt
 micov consolidate --paths {{output}}/cov_files.txt --lengths ${len_map} --output {{output}}/coverages.tgz
 
-cd alignments
-tar -cvf ../alignments.tar *.sam.xz
+cd alignment
+tar -cvf ../alignment.tar *.sam.xz
 
 finish_qp_pacbio {{url}} {{qjid}} {{output}}
