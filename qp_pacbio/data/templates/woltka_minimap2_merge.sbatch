@@ -25,7 +25,7 @@ for f in `ls alignment/*.sam.xz`; do
     mkdir -p ${of};
     echo "woltka classify -i ${f} -o ${of}/none.biom --no-demux --lineage ${tax} --rank none --outcov {{output}}/coverages/";
     echo "woltka classify -i ${f} -o ${of}/per-gene.biom --no-demux -c ${coords}";
-done | parallel -j {{nprocs}}
+done | parallel --halt now,fail=1 -j {{nprocs}}
 wait
 
 for f in `ls bioms/*/per-gene.biom`; do
@@ -36,7 +36,7 @@ for f in `ls bioms/*/per-gene.biom`; do
         "woltka collapse -i ${dn}/ko.biom -m ${functional_dir}/ko-to-reaction.map -o ${dn}/reaction.biom; " \
         "woltka collapse -i ${dn}/reaction.biom -m ${functional_dir}/reaction-to-module.map -o ${dn}/module.biom; " \
         "woltka collapse -i ${dn}/module.biom -m ${functional_dir}/module-to-pathway.map -o ${dn}/pathway.biom;"
-done | parallel -j {{nprocs}}
+done | parallel --halt now,fail=1 -j {{nprocs}}
 wait
 
 biom_merge_pacbio --base {{output}}

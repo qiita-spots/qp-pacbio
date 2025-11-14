@@ -239,7 +239,7 @@ class PacWoltkaProfilingTests(PacBioTests):
             f'--rank none --outcov {out_dir}/coverages/";\n',
             '    echo "woltka classify -i ${f} -o ${of}/per-gene.biom '
             '--no-demux -c ${coords}";\n',
-            "done | parallel -j 16\n",
+            "done | parallel --halt now,fail=1 -j 16\n",
             "wait\n",
             "\n",
             "for f in `ls bioms/*/per-gene.biom`; do\n",
@@ -257,7 +257,7 @@ class PacWoltkaProfilingTests(PacBioTests):
             '        "woltka collapse -i ${dn}/module.biom -m '
             "${functional_dir}/module-to-pathway.map "
             '-o ${dn}/pathway.biom;"\n',
-            "done | parallel -j 16\n",
+            "done | parallel --halt now,fail=1 -j 16\n",
             "wait\n",
             "\n",
             f"biom_merge_pacbio --base {out_dir}\n",
