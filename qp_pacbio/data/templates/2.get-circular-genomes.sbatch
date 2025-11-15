@@ -25,6 +25,15 @@ if [[ "$step" == "1" ]]; then
     python -c "from qp_pacbio.util import client_connect; qclient = client_connect('{{url}}'); qclient.update_job_step('{{qjid}}', 'Running step 2: ${SLURM_ARRAY_JOB_ID}')"
 fi
 
+function finish_when_error {
+    touch {{output}}/step-2/completed_${SLURM_ARRAY_TASK_ID}.log
+    touch {{output}}/step-3/completed_${SLURM_ARRAY_TASK_ID}.log
+    touch {{output}}/step-4/completed_${SLURM_ARRAY_TASK_ID}.log
+    touch {{output}}/step-5/completed_${SLURM_ARRAY_TASK_ID}.log
+    touch {{output}}/step-6/completed_${SLURM_ARRAY_TASK_ID}.log
+    touch {{output}}/step-7/completed_${SLURM_ARRAY_TASK_ID}.log
+}
+
 cat ${sample_name}.p_ctg.gfa | awk '$1=="S" && ($2 ~ /.c$/) {printf ">%s\n%s\n", $2, $3} ' > ../step-2/${sample_name}_circ.fa
 seqkit split --by-id ../step-2/${sample_name}_circ.fa -O ../step-2/${sample_name}_split
 
@@ -52,6 +61,10 @@ if [ -f $FILES ]; then
     sed -i 's/>//' circular_id.txt
     seqkit grep -v -f circular_id.txt ../${sample_name}_all_contigs.fa > ../${sample_name}_noLCG.fa
 else
+    if [ ! -s "../${sample_name}_all_contigs.fa" ]; then
+        finish_when_error
+        exit 1
+    fi
     cp ../${sample_name}_all_contigs.fa ../${sample_name}_noLCG.fa
 fi
 
@@ -71,15 +84,10 @@ if [ -f {{output}}/step-2/${sample_name}_noLCG.fa ]; then
     cat {{output}}/step-2/${sample_name}_noLCG.fa | gzip > {{result_fp}}/${sample_name}/${sample_name}.noLCG.fna.gz
 fi
 
-touch {{output}}/step-2/completed_${SLURM_ARRAY_TASK_ID}.log
 # if the files don't exist, it means that this step didn't generate any
 # inputs for the next step; thus generating all the completed files
 if [[ ! -f "$FILES" && ! -f "{{output}}/step-2/${sample_name}_noLCG.fa" ]]; then
-    touch {{output}}/step-3/completed_${SLURM_ARRAY_TASK_ID}.log
-    touch {{output}}/step-4/completed_${SLURM_ARRAY_TASK_ID}.log
-    touch {{output}}/step-5/completed_${SLURM_ARRAY_TASK_ID}.log
-    touch {{output}}/step-6/completed_${SLURM_ARRAY_TASK_ID}.log
-    touch {{output}}/step-7/completed_${SLURM_ARRAY_TASK_ID}.log
+    finish_when_error
 fi
 
 # saving small LCG, note that these are not processed downstrem so not
@@ -94,3 +102,4 @@ if [ -f $FILES ]; then
         cat $f | gzip > ${small_lcg_folder}/${sn/.fa/.fna}.gz;
     done
 fi
+touch {{output}}/step-2/completed_${SLURM_ARRAY_TASK_ID}.log
