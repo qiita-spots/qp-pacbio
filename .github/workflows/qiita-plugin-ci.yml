@@ -145,7 +145,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - name: flake8
+      - name: ruff
         uses: actions/setup-python@v2
         with:
           python-version: 3.9
@@ -156,4 +156,4 @@ jobs:
       - name: lint
         run: |
           pip install -q flake8
-          flake8 .
+          ruff check .

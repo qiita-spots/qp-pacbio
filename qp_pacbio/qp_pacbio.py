@@ -11,8 +11,13 @@ from os.path import basename, exists, join
 from shutil import copy2
 from subprocess import run
 
+import pandas as pd
 import yaml
+from biom import load_table
 from jinja2 import Environment
+from pysyndna import (
+    fit_linear_regression_models_for_qiita,
+)
 from qiita_client import ArtifactInfo
 
 from .util import KISSLoader, find_base_path
@@ -379,6 +384,149 @@ def generate_minimap2_processing(qclient, job_id, out_dir, parameters, url):
         Returns the two filepaths of the slurm scripts
     """
     resources = RESOURCES["Woltka v0.1.7, minimap2"]
+    main_parameters = {
+        "conda_environment": CONDA_ENVIRONMENT,
+        "output": out_dir,
+        "qjid": job_id,
+    }
+
+    qclient.update_job_step(
+        job_id, "Step 1 of 4: Collecting info and generating submission"
+    )
+
+    artifact_id = parameters["artifact"]
+
+    njobs = generate_sample_list(qclient, artifact_id, out_dir)
+
+    qclient.update_job_step(
+        job_id,
+        "Step 2 of 4: Creating submission templates",
+    )
+
+    m2t = JGT("woltka_minimap2.sbatch")
+    step_resources = resources["minimap2"]
+    params = main_parameters | {
+        "job_name": f"m2_{job_id}",
+        "node_count": step_resources["node_count"],
+        "nprocs": step_resources["nprocs"],
+        "wall_time_limit": step_resources["wall_time_limit"],
+        "mem_in_gb": step_resources["mem_in_gb"],
+        "array_params": f"1-{njobs}%{step_resources['max_tasks']}",
+    }
+    minimap2_script = _write_slurm(f"{out_dir}/minimap2", m2t, **params)
+
+    m2mt = JGT("woltka_minimap2_merge.sbatch")
+    step_resources = resources["merge"]
+    params = main_parameters | {
+        "job_name": f"me_{job_id}",
+        "node_count": step_resources["node_count"],
+        "nprocs": step_resources["nprocs"],
+        "wall_time_limit": step_resources["wall_time_limit"],
+        "mem_in_gb": step_resources["mem_in_gb"],
+        "url": url,
+    }
+    step_resources = resources["merge"]
+    minimap2_merge_script = _write_slurm(f"{out_dir}/merge", m2mt, **params)
+
+    return minimap2_script, minimap2_merge_script
+
+
+def syndna_processing(qclient, job_id, parameters, out_dir):
+    """generates output for syndna processing.
+
+    Parameters
+    ----------
+    qclient : tgp.qiita_client.QiitaClient
+        Qiita server client.
+    job_id : str
+        Job id.
+    parameters : dict
+        Parameters for this job.
+    out_dir : str
+        Output directory.
+
+    Returns
+    -------
+    bool, list, str
+        Results tuple for Qiita.
+    """
+    qclient.update_job_step(job_id, "Commands finished")
+
+    errors = []
+    ainfo = []
+    fp_biom = f"{out_dir}/syndna.biom"
+    # do we need to stor alignments?
+    # fp_alng = f'{out_dir}/sams/final/alignment.tar'
+
+    if exists(fp_biom):  # and exists(fp_alng):
+        # if we got to this point a preparation file should exist in
+        # the output folder
+        prep = pd.read_csv(f"{out_dir}/prep_info.tsv", index_col=None, sep="\t")
+        output = fit_linear_regression_models_for_qiita(
+            prep, load_table(fp_biom), int(parameters["min_sample_counts"])
+        )
+        # saving results to disk
+        lin_regress_results_fp = f"{out_dir}/lin_regress_by_sample_id.yaml"
+        fit_syndna_models_log_fp = f"{out_dir}/fit_syndna_models_log.txt"
+        with open(lin_regress_results_fp, "w") as fp:
+            fp.write(output["lin_regress_by_sample_id"])
+        with open(fit_syndna_models_log_fp, "w") as fp:
+            fp.write(output["fit_syndna_models_log"])
+        ainfo = [
+            ArtifactInfo(
+                "SynDNA hits",
+                "BIOM",
+                [
+                    (fp_biom, "biom"),
+                    # rm if fp_alng is not needed
+                    # (fp_alng, "log"),
+                    (lin_regress_results_fp, "log"),
+                    (fit_syndna_models_log_fp, "log"),
+                ],
+            )
+        ]
+    else:
+        ainfo = []
+        errors.append(
+            'Missing files from the "SynDNA hits"; please '
+            "contact qiita.help@gmail.com for more information"
+        )
+
+    fp_seqs = f"{out_dir}/filtered"
+    reads = []
+    for f in glob(f"{fp_seqs}/*.fastq.gz"):
+        reads.append((f, "raw_forward_seqs"))
+
+    if not errors:
+        ainfo.append(ArtifactInfo("reads without SynDNA", "per_sample_FASTQ", reads))
+    else:
+        return False, ainfo, "\n".join(errors)
+
+    return True, ainfo, ""
+
+
+def generate_syndna_processing(qclient, job_id, out_dir, parameters, url):
+    """generates slurm scripts for syndna processing.
+
+    Parameters
+    ----------
+    qclient : tgp.qiita_client.QiitaClient
+        Qiita server client.
+    job_id : str
+        Job id.
+    out_dir : str
+        Output directory.
+    parameters : dict
+        Parameters for this job.
+    url : str
+        URL to send the respose, finish the job.
+
+    Returns
+    -------
+    str, str
+        Returns the two filepaths of the slurm scripts
+    """
+    resources = RESOURCES["Remove SynDNA plasmid, insert, & CP026085 reads (minimap2)"]
     main_parameters = {
         "conda_environment": CONDA_ENVIRONMENT,
         "output": out_dir,
