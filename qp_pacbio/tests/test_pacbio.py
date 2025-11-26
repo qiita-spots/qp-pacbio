@@ -260,7 +260,7 @@ class PacWoltkaProfilingTests(PacBioTests):
             "done | parallel --halt now,fail=1 -j 16\n",
             "wait\n",
             "\n",
-            f"biom_merge_pacbio --base {out_dir}\n",
+            f"biom_merge_pacbio --base {out_dir} --type woltka\n",
             "\n",
             (
                 f'find {out_dir}/coverages/ -iname "*.cov" '
