@@ -58,14 +58,14 @@ Woltka v0.1.7, minimap2:
     nprocs: 16
     wall_time_limit: 1-00:00:00
     mem_in_gb: 120
-Remove SynDNA plasmid, insert, & CP026085 reads (minimap2):
+Remove SynDNA plasmid, insert, & GCF_000184185 reads (minimap2):
   syndna:
     node_count: 1
     nprocs: 16
     wall_time_limit: 10:00:00
     mem_in_gb: 60
     max_tasks: 16
-  merge:
+  finish:
     node_count: 1
     nprocs: 16
     wall_time_limit: 1-00:00:00

@@ -81,7 +81,7 @@ dflt_param_set = {
     "SynDNA": {"min_sample_counts": 1},
 }
 pacbio_processing_cmd = QiitaCommand(
-    "Remove SynDNA plasmid, insert, & CP026085 reads (minimap2)",
+    "Remove SynDNA plasmid, insert, & GCF_000184185 reads (minimap2)",
     "Remove SynDNA reads using minimap2 and woltka",
     syndna_processing,
     req_params,

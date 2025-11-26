@@ -526,7 +526,9 @@ def generate_syndna_processing(qclient, job_id, out_dir, parameters, url):
     str, str
         Returns the two filepaths of the slurm scripts
     """
-    resources = RESOURCES["Remove SynDNA plasmid, insert, & CP026085 reads (minimap2)"]
+    resources = RESOURCES[
+        "Remove SynDNA plasmid, insert, & GCF_000184185 reads (minimap2)"
+    ]
     main_parameters = {
         "conda_environment": CONDA_ENVIRONMENT,
         "output": out_dir,
@@ -546,10 +548,10 @@ def generate_syndna_processing(qclient, job_id, out_dir, parameters, url):
         "Step 2 of 4: Creating submission templates",
     )
 
-    m2t = JGT("woltka_minimap2.sbatch")
-    step_resources = resources["minimap2"]
+    m2t = JGT("syndna.sbatch")
+    step_resources = resources["syndna"]
     params = main_parameters | {
-        "job_name": f"m2_{job_id}",
+        "job_name": f"sd_{job_id}",
         "node_count": step_resources["node_count"],
         "nprocs": step_resources["nprocs"],
         "wall_time_limit": step_resources["wall_time_limit"],
@@ -558,8 +560,8 @@ def generate_syndna_processing(qclient, job_id, out_dir, parameters, url):
     }
     minimap2_script = _write_slurm(f"{out_dir}/minimap2", m2t, **params)
 
-    m2mt = JGT("woltka_minimap2_merge.sbatch")
-    step_resources = resources["merge"]
+    m2mt = JGT("syndna_finish.sbatch")
+    step_resources = resources["finish"]
     params = main_parameters | {
         "job_name": f"me_{job_id}",
         "node_count": step_resources["node_count"],
@@ -568,7 +570,6 @@ def generate_syndna_processing(qclient, job_id, out_dir, parameters, url):
         "mem_in_gb": step_resources["mem_in_gb"],
         "url": url,
     }
-    step_resources = resources["merge"]
     minimap2_merge_script = _write_slurm(f"{out_dir}/merge", m2mt, **params)
 
     return minimap2_script, minimap2_merge_script
