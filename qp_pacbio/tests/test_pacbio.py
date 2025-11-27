@@ -20,6 +20,7 @@ from qp_pacbio.qp_pacbio import (
     CONDA_ENVIRONMENT,
     generate_minimap2_processing,
     generate_sample_list,
+    generate_syndna_processing,
     pacbio_generate_templates,
 )
 
@@ -260,7 +261,7 @@ class PacWoltkaProfilingTests(PacBioTests):
             "done | parallel --halt now,fail=1 -j 16\n",
             "wait\n",
             "\n",
-            f"biom_merge_pacbio --base {out_dir}\n",
+            f"biom_merge_pacbio --base {out_dir} --type woltka\n",
             "\n",
             (
                 f'find {out_dir}/coverages/ -iname "*.cov" '
@@ -275,6 +276,107 @@ class PacWoltkaProfilingTests(PacBioTests):
             f"finish_qp_pacbio {url} {job_id} {out_dir}",
         ]
         self.assertEqual(obs_merge, exp_merge)
+
+
+class PacWoltkaSynDNATests(PacBioTests):
+    def test_syndna(self):
+        params = {"artifact": int(self._insert_data())}
+        job_id = "my-job-id"
+        out_dir = mkdtemp()
+        self._clean_up_files.append(out_dir)
+
+        url = "https://test.test.edu/"
+        # this should fail cause we don't have valid data
+        main_fp, finish_fp = generate_syndna_processing(
+            self.qclient, job_id, out_dir, params, url
+        )
+        with open(main_fp, "r") as f:
+            obs_main = f.readlines()
+        with open(finish_fp, "r") as f:
+            obs_finish = f.readlines()
+
+        exp_main = [
+            "#!/bin/bash\n",
+            "#SBATCH -J sd_my-job-id\n",
+            "#SBATCH -p qiita\n",
+            "#SBATCH -N 1\n",
+            "#SBATCH -n 16\n",
+            "#SBATCH --time 36000\n",
+            "#SBATCH --mem 60G\n",
+            f"#SBATCH -o {out_dir}/minimap2/logs/%x-%A_%a.out\n",
+            f"#SBATCH -e {out_dir}/minimap2/logs/%x-%A_%a.err\n",
+            "#SBATCH --array 1-2%16\n",
+            "\n",
+            "source ~/.bashrc\n",
+            "set -e\n",
+            f"{CONDA_ENVIRONMENT}\n",
+            f"out_folder={out_dir}/syndna\n",
+            "mkdir -p\n",
+            "cd ${out_folder}\n",
+            "db_folder=/scratch/qp-pacbio/minimap2/syndna/\n",
+            "\n",
+            "step=${SLURM_ARRAY_TASK_ID}\n",
+            f"input=$(head -n $step {out_dir}/sample_list.txt | tail -n 1)\n",
+            "sample_name=`echo $input | awk '{print $1}'`\n",
+            "filename=`echo $input | awk '{print $2}'`\n",
+            "fn=`basename ${filename}`\n",
+            "\n",
+            "mkdir -p ${out_folder}/filtered/\n",
+            "\n",
+            "sn_folder=${out_folder}/bioms/${sample_name}\n",
+            "mkdir -p ${sn_folder}\n",
+            "\n",
+            "coverm contig --single $filename --reference ${db_folder}/All_synDNA_inserts.fasta --mapper minimap2-hifi \\\n",
+            "    --min-read-percent-identity 0.95 --min-read-aligned-percent 0.0 -m mean count --threads 16 \\\n",
+            "    --output-file ${sn_folder}/${sample_name}.txt\n",
+            "cat ${sn_folder}/${sample_name}_insert_counts.txt | sed 's/Contig/\\#OTU ID/' | \\\n",
+            "    sed 's/ Read Count//' > ${sn_folder}/${sample_name}.tsv\n",
+            "biom convert -i ${sn_folder}/${sample_name}.txt -o ${sn_folder}/${sample_name}.biom --to-hdf5\n",
+            "\n",
+            "# removing AllsynDNA_plasmids_FASTA_ReIndexed_FINAL.fasta not coverm\n",
+            "minimap2 -x map-hifi -t 16 -a --MD --eqx -o ${out_folder}/${sample_name}_plasmid.sam ${db_folder}/AllsynDNA_plasmids_FASTA_ReIndexed_FINAL.fasta $filename\n",
+            "samtools view -F 4 -@ 16 ${out_folder}/${sample_name}_plasmid.sam | awk '{print $1}' | sort -u > ${out_folder}/${sample_name}_plasmid_mapped.txt\n",
+            "seqkit grep -v -f ${out_folder}/${sample_name}_plasmid_mapped.txt $filename > ${out_folder}/${sample_name}_no_plasmid.fastq\n",
+            "\n",
+            "# removing GCF_000184185.1_ASM18418v1_genomic_chroso.fna use coverm\n",
+            "minimap2 -x map-hifi -t 16 -a --MD --eqx -o ${out_folder}/${sample_name}_GCF_000184185.sam ${db_folder}/GCF_000184185.1_ASM18418v1_genomic_chroso.fna ${out_folder}/${sample_name}_no_plasmid_no_inserts.fastq\n",
+            "samtools view -bS -@ 8.0 ${out_folder}/${sample_name}_no_plasmid_no_inserts.fastq | samtools sort -@ 8.0 -O bam -o ${out_folder}/${sample_name}_GCF_000184185_sorted.sam\n",
+            "coverm filter --bam-files ${out_folder}/${sample_name}_GCF_000184185_sorted.sam --min-read-percent-identity 99.9 --min-read-aligned-percent 95 --threads 16 -o ${out_folder}/${sample_name}_GCF_000184185.bam\n",
+            "samtools view -O SAM -o ${out_folder}/${sample_name}_no_GCF_000184185_sorted.sam ${out_folder}/${sample_name}_no_inserts.bam\n",
+            "awk '{print $1}' ${out_folder}/${sample_name}_no_GCF_000184185_sorted.sam > ${out_folder}/${sample_name}_GCF_000184185_reads_filtered.txt\n",
+            "seqkit grep -v -f ${out_folder}/${sample_name}_GCF_000184185_reads_filtered.txt ${out_folder}/${sample_name}_GCF_000184185.fastq | gz > ${out_folder}/filtered/${fn}\n",
+            "awk 'BEGIN {FS=OFS=\"\\t\"}; {print $1,$3}'",
+        ]
+
+        self.assertEqual(obs_main, exp_main)
+
+        exp_merge = [
+            "#!/bin/bash\n",
+            "#SBATCH -J me_my-job-id\n",
+            "#SBATCH -p qiita\n",
+            "#SBATCH -N 1\n",
+            "#SBATCH -n 16\n",
+            "#SBATCH --time 1-00:00:00\n",
+            "#SBATCH --mem 120G\n",
+            f"#SBATCH -o {out_dir}/merge/logs/%x-%A_%a.out\n",
+            f"#SBATCH -e {out_dir}/merge/logs/%x-%A_%a.err\n",
+            "\n",
+            "source ~/.bashrc\n",
+            "set -e\n",
+            f"{CONDA_ENVIRONMENT}\n",
+            f"cd {out_dir}/\n",
+            "\n",
+            f"biom_merge_pacbio --base {out_dir} --type syndna\n",
+            "\n",
+            f'# find {out_dir}/coverages/ -iname "*.cov" > {out_dir}/cov_files.txt\n',
+            f"# micov consolidate --paths {out_dir}/cov_files.txt --lengths ${{len_map}} --output {out_dir}/coverages.tgz\n",
+            "\n",
+            "# cd alignment\n",
+            "# tar -cvf ../alignment.tar *.sam.xz\n",
+            "\n",
+            f"finish_qp_pacbio https://test.test.edu/ my-job-id {out_dir}",
+        ]
+        self.assertEqual(obs_finish, exp_merge)
 
 
 if __name__ == "__main__":

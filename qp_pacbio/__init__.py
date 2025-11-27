@@ -5,10 +5,14 @@
 #
 # The full license is in the file LICENSE, distributed with this software.
 # -----------------------------------------------------------------------------
-from qiita_client import QiitaPlugin, QiitaCommand
-from .qp_pacbio import pacbio_processing, minimap2_processing
-from .util import plugin_details
+from qiita_client import QiitaCommand, QiitaPlugin
 
+from .qp_pacbio import (
+    minimap2_processing,
+    pacbio_processing,
+    syndna_processing,
+)
+from .util import plugin_details
 
 plugin = QiitaPlugin(**plugin_details)
 
@@ -59,4 +63,30 @@ pacbio_processing_cmd = QiitaCommand(
     dflt_param_set,
 )
 
+plugin.register_command(pacbio_processing_cmd)
+
+#
+# syndna filtering
+#
+
+req_params = {
+    "artifact": ("artifact", ["per_sample_FASTQ"]),
+}
+opt_params = {"min_sample_counts": ("integer", "1")}
+outputs = {
+    "SynDNA hits": "BIOM",
+    "reads without SynDNA": "per_sample_FASTQ",
+}
+dflt_param_set = {
+    "SynDNA": {"min_sample_counts": 1},
+}
+pacbio_processing_cmd = QiitaCommand(
+    "Remove SynDNA plasmid, insert, & GCF_000184185 reads (minimap2)",
+    "Remove SynDNA reads using minimap2 and woltka",
+    syndna_processing,
+    req_params,
+    opt_params,
+    outputs,
+    dflt_param_set,
+)
 plugin.register_command(pacbio_processing_cmd)

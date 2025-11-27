@@ -6,23 +6,24 @@
 #
 # The full license is in the file LICENSE, distributed with this software.
 # -----------------------------------------------------------------------------
-import click
+import enum
+from glob import glob
 from os import makedirs
 from os.path import join
-import biom as _biom
-from glob import glob
-import h5py
+from subprocess import PIPE, run
 
+import biom as _biom
+import click
+import h5py
 
 from qp_pacbio import plugin
 from qp_pacbio.qp_pacbio import (
+    PACBIO_PROCESSING_STEPS,
     generate_minimap2_processing,
     generate_sample_list,
     pacbio_generate_templates,
-    PACBIO_PROCESSING_STEPS,
 )
 from qp_pacbio.util import client_connect
-from subprocess import run, PIPE
 
 
 @click.command()
@@ -117,45 +118,63 @@ def finish_qp_pacbio(url, job_id, output_dir):
     plugin(url, job_id, output_dir)
 
 
+def _biom_merge(tables):
+    chunk_size = 30
+    full = None
+    for block in range(0, len(tables), chunk_size):
+        lblock = block + chunk_size
+        chunk = tables[block:lblock]
+        loaded = []
+        for c in chunk:
+            skip = True
+            if _biom.util.is_hdf5_file(c):
+                skip = False
+            else:
+                with open(c) as fh:
+                    for i, _l in enumerate(fh):
+                        if i >= 1 and _l:
+                            skip = False
+                            break
+            if not skip:
+                temp = _biom.load_table(c)
+                if temp.shape != (0, 0):
+                    loaded.append(temp)
+
+        if full is None:
+            if len(loaded) == 1:
+                full = loaded[0]
+            else:
+                full = loaded[0].concat(loaded[1:])
+        else:
+            full = full.concat(loaded)
+
+    return full
+
+
+class BIOMMergeOptions(enum.Enum):
+    SYNDNA = enum.auto()
+    WOLTKA = enum.auto()
+
+
 @click.command()
 @click.option("--base", type=click.Path(exists=True), required=True)
-def biom_merge(base):
+@click.option("--type", type=click.Choice(BIOMMergeOptions, case_sensitive=False))
+def biom_merge(base, type: BIOMMergeOptions):
     """Merges all PacBio biom tables"""
-    chunk_size = 30
-    for rank in ("none", "per-gene", "ko", "ec", "pathway"):
+    if type == BIOMMergeOptions.SYNDNA:
+        ranks = ["syndna"]
+    elif type == BIOMMergeOptions.WOLTKA:
+        ranks = ["none", "per-gene", "ko", "ec", "pathway"]
+    else:
+        raise ValueError(f"Type '{type}' not supported")
+
+    for rank in ranks:
         rank = rank + ".biom"
         tables = glob(f"{base}/bioms/*/{rank}")
 
         if not tables:
             continue
 
-        full = None
-        for block in range(0, len(tables), chunk_size):
-            lblock = block + chunk_size
-            chunk = tables[block:lblock]
-            loaded = []
-            for c in chunk:
-                skip = True
-                if _biom.util.is_hdf5_file(c):
-                    skip = False
-                else:
-                    with open(c) as fh:
-                        for i, l in enumerate(fh):
-                            if i >= 1 and l:
-                                skip = False
-                                break
-                if not skip:
-                    temp = _biom.load_table(c)
-                    if temp.shape != (0, 0):
-                        loaded.append(temp)
-
-            if full is None:
-                if len(loaded) == 1:
-                    full = loaded[0]
-                else:
-                    full = loaded[0].concat(loaded[1:])
-            else:
-                full = full.concat(loaded)
-
+        full = _biom_merge(tables)
         with h5py.File(f"{base}/{rank}", "w") as out:
             full.to_hdf5(out, "fast-merge")
