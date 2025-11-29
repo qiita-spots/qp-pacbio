@@ -558,7 +558,7 @@ def generate_syndna_processing(qclient, job_id, out_dir, parameters, url):
         "mem_in_gb": step_resources["mem_in_gb"],
         "array_params": f"1-{njobs}%{step_resources['max_tasks']}",
     }
-    minimap2_script = _write_slurm(f"{out_dir}/minimap2", m2t, **params)
+    minimap2_script = _write_slurm(f"{out_dir}/syndna", m2t, **params)
 
     m2mt = JGT("syndna_finish.sbatch")
     step_resources = resources["finish"]
@@ -570,6 +570,6 @@ def generate_syndna_processing(qclient, job_id, out_dir, parameters, url):
         "mem_in_gb": step_resources["mem_in_gb"],
         "url": url,
     }
-    minimap2_merge_script = _write_slurm(f"{out_dir}/merge", m2mt, **params)
+    minimap2_finish_script = _write_slurm(f"{out_dir}/finish", m2mt, **params)
 
-    return minimap2_script, minimap2_merge_script
+    return minimap2_script, minimap2_finish_script

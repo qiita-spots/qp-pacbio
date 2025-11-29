@@ -5,15 +5,15 @@
 #SBATCH -n {{nprocs}}
 #SBATCH --time {{wall_time_limit}}
 #SBATCH --mem {{mem_in_gb}}G
-#SBATCH -o {{output}}/minimap2/logs/%x-%A_%a.out
-#SBATCH -e {{output}}/minimap2/logs/%x-%A_%a.err
+#SBATCH -o {{output}}/syndna/logs/%x-%A_%a.out
+#SBATCH -e {{output}}/syndna/logs/%x-%A_%a.err
 #SBATCH --array {{array_params}}
 
 source ~/.bashrc
 set -e
 {{conda_environment}}
 out_folder={{output}}/syndna
-mkdir -p
+mkdir -p ${out_folder}
 cd ${out_folder}
 db_folder=/scratch/qp-pacbio/minimap2/syndna/
 
@@ -35,16 +35,24 @@ cat ${sn_folder}/${sample_name}_insert_counts.txt | sed 's/Contig/\#OTU ID/' | \
     sed 's/ Read Count//' > ${sn_folder}/${sample_name}.tsv
 biom convert -i ${sn_folder}/${sample_name}.txt -o ${sn_folder}/${sample_name}.biom --to-hdf5
 
+# if biom doesn't exist mark it as missing and stop
+if [ -f ${sn_folder}/${sample_name}.biom ]; then
+    touch {{output}}/failed_${SLURM_ARRAY_TASK_ID}.log
+    exit(0)
+fi
+
 # removing AllsynDNA_plasmids_FASTA_ReIndexed_FINAL.fasta not coverm
 minimap2 -x map-hifi -t {{nprocs}} -a --MD --eqx -o ${out_folder}/${sample_name}_plasmid.sam ${db_folder}/AllsynDNA_plasmids_FASTA_ReIndexed_FINAL.fasta $filename
 samtools view -F 4 -@ {{nprocs}} ${out_folder}/${sample_name}_plasmid.sam | awk '{print $1}' | sort -u > ${out_folder}/${sample_name}_plasmid_mapped.txt
 seqkit grep -v -f ${out_folder}/${sample_name}_plasmid_mapped.txt $filename > ${out_folder}/${sample_name}_no_plasmid.fastq
 
 # removing GCF_000184185.1_ASM18418v1_genomic_chroso.fna use coverm
-minimap2 -x map-hifi -t {{nprocs}} -a --MD --eqx -o ${out_folder}/${sample_name}_GCF_000184185.sam ${db_folder}/GCF_000184185.1_ASM18418v1_genomic_chroso.fna ${out_folder}/${sample_name}_no_plasmid_no_inserts.fastq
-samtools view -bS -@ {{ nprocs/2 | int }} ${out_folder}/${sample_name}_no_plasmid_no_inserts.fastq | samtools sort -@ {{ nprocs/2 | int }} -O bam -o ${out_folder}/${sample_name}_GCF_000184185_sorted.sam
+minimap2 -x map-hifi -t {{nprocs}} -a --MD --eqx -o ${out_folder}/${sample_name}_GCF_000184185.sam ${db_folder}/GCF_000184185.1_ASM18418v1_genomic_chroso.fna ${out_folder}/${sample_name}_no_plasmid.fastq
+samtools view -bS -@ {{ nprocs/2 | int }} ${out_folder}/${sample_name}_no_plasmid.fastq | samtools sort -@ {{ nprocs/2 | int }} -O bam -o ${out_folder}/${sample_name}_GCF_000184185_sorted.sam
 coverm filter --bam-files ${out_folder}/${sample_name}_GCF_000184185_sorted.sam --min-read-percent-identity 99.9 --min-read-aligned-percent 95 --threads {{nprocs}} -o ${out_folder}/${sample_name}_GCF_000184185.bam
 samtools view -O SAM -o ${out_folder}/${sample_name}_no_GCF_000184185_sorted.sam ${out_folder}/${sample_name}_no_inserts.bam
 awk '{print $1}' ${out_folder}/${sample_name}_no_GCF_000184185_sorted.sam > ${out_folder}/${sample_name}_GCF_000184185_reads_filtered.txt
 seqkit grep -v -f ${out_folder}/${sample_name}_GCF_000184185_reads_filtered.txt ${out_folder}/${sample_name}_GCF_000184185.fastq | gz > ${out_folder}/filtered/${fn}
 awk 'BEGIN {FS=OFS="\t"}; {print $1,$3}'
+
+touch {{output}}/completed_${SLURM_ARRAY_TASK_ID}.log
