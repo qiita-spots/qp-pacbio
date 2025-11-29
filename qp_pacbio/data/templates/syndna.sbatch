@@ -36,9 +36,9 @@ cat ${sn_folder}/${sample_name}.txt | sed 's/Contig/\#OTU ID/' | \
 biom convert -i ${sn_folder}/${sample_name}.txt -o ${sn_folder}/${sample_name}.biom --to-hdf5
 
 # if biom doesn't exist mark it as missing and stop
-if [ -f ${sn_folder}/${sample_name}.biom ]; then
+if [ ! -f ${sn_folder}/${sample_name}.biom ]; then
     touch {{output}}/failed_${SLURM_ARRAY_TASK_ID}.log
-    exit(0)
+    exit 0
 fi
 
 # removing AllsynDNA_plasmids_FASTA_ReIndexed_FINAL.fasta not coverm

@@ -334,9 +334,9 @@ class PacWoltkaSynDNATests(PacBioTests):
             "biom convert -i ${sn_folder}/${sample_name}.txt -o ${sn_folder}/${sample_name}.biom --to-hdf5\n",
             "\n",
             "# if biom doesn't exist mark it as missing and stop\n",
-            "if [ -f ${sn_folder}/${sample_name}.biom ]; then\n",
+            "if [ ! -f ${sn_folder}/${sample_name}.biom ]; then\n",
             f"    touch {out_dir}/failed_${{SLURM_ARRAY_TASK_ID}}.log\n",
-            "    exit(0)\n",
+            "    exit 0\n",
             "fi\n",
             "\n",
             "# removing AllsynDNA_plasmids_FASTA_ReIndexed_FINAL.fasta not coverm\n",
@@ -352,6 +352,7 @@ class PacWoltkaSynDNATests(PacBioTests):
             "awk '{print $1}' ${out_folder}/${sample_name}_no_GCF_000184185_sorted.sam > ${out_folder}/${sample_name}_GCF_000184185_reads_filtered.txt\n",
             "seqkit grep -v -f ${out_folder}/${sample_name}_GCF_000184185_reads_filtered.txt ${out_folder}/${sample_name}_GCF_000184185.fastq | gz > ${out_folder}/filtered/${fn}\n",
             "awk 'BEGIN {FS=OFS=\"\\t\"}; {print $1,$3}'\n",
+            "\n",
             f"touch {out_dir}/completed_${{SLURM_ARRAY_TASK_ID}}.log",
         ]
 
