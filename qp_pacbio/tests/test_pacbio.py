@@ -352,7 +352,7 @@ class PacWoltkaSynDNATests(PacBioTests):
             "awk '{print $1}' ${out_folder}/${sample_name}_no_GCF_000184185_sorted.sam > ${out_folder}/${sample_name}_GCF_000184185_reads_filtered.txt\n",
             "seqkit grep -v -f ${out_folder}/${sample_name}_GCF_000184185_reads_filtered.txt ${out_folder}/${sample_name}_GCF_000184185.fastq | gz > ${out_folder}/filtered/${fn}\n",
             "awk 'BEGIN {FS=OFS=\"\\t\"}; {print $1,$3}'\n",
-            "touch {{output}}/completed_${SLURM_ARRAY_TASK_ID}.log",
+            f"    touch {out_dir}/completed_${{SLURM_ARRAY_TASK_ID}}.log",
         ]
 
         self.assertEqual(obs_main, exp_main)
