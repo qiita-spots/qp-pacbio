@@ -335,7 +335,7 @@ class PacWoltkaSynDNATests(PacBioTests):
             "\n",
             "# if biom doesn't exist mark it as missing and stop\n",
             "if [ -f ${sn_folder}/${sample_name}.biom ]; then\n",
-            f"    touch {{output}}/failed_${{SLURM_ARRAY_TASK_ID}}.log\n",
+            f"    touch {out_dir}/failed_${{SLURM_ARRAY_TASK_ID}}.log\n",
             "    exit(0)\n",
             "fi\n",
             "\n",
