@@ -329,7 +329,7 @@ class PacWoltkaSynDNATests(PacBioTests):
             "coverm contig --single $filename --reference ${db_folder}/All_synDNA_inserts.fasta --mapper minimap2-hifi \\\n",
             "    --min-read-percent-identity 0.95 --min-read-aligned-percent 0.0 -m mean count --threads 16 \\\n",
             "    --output-file ${sn_folder}/${sample_name}.txt\n",
-            "cat ${sn_folder}/${sample_name}_insert_counts.txt | sed 's/Contig/\\#OTU ID/' | \\\n",
+            "cat ${sn_folder}/${sample_name}.txt | sed 's/Contig/\\#OTU ID/' | \\\n",
             "    sed 's/ Read Count//' > ${sn_folder}/${sample_name}.tsv\n",
             "biom convert -i ${sn_folder}/${sample_name}.txt -o ${sn_folder}/${sample_name}.biom --to-hdf5\n",
             "\n",
@@ -352,7 +352,7 @@ class PacWoltkaSynDNATests(PacBioTests):
             "awk '{print $1}' ${out_folder}/${sample_name}_no_GCF_000184185_sorted.sam > ${out_folder}/${sample_name}_GCF_000184185_reads_filtered.txt\n",
             "seqkit grep -v -f ${out_folder}/${sample_name}_GCF_000184185_reads_filtered.txt ${out_folder}/${sample_name}_GCF_000184185.fastq | gz > ${out_folder}/filtered/${fn}\n",
             "awk 'BEGIN {FS=OFS=\"\\t\"}; {print $1,$3}'\n",
-            f"    touch {out_dir}/completed_${{SLURM_ARRAY_TASK_ID}}.log",
+            f"touch {out_dir}/completed_${{SLURM_ARRAY_TASK_ID}}.log",
         ]
 
         self.assertEqual(obs_main, exp_main)

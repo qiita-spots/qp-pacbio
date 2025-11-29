@@ -31,7 +31,7 @@ mkdir -p ${sn_folder}
 coverm contig --single $filename --reference ${db_folder}/All_synDNA_inserts.fasta --mapper minimap2-hifi \
     --min-read-percent-identity 0.95 --min-read-aligned-percent 0.0 -m mean count --threads {{nprocs}} \
     --output-file ${sn_folder}/${sample_name}.txt
-cat ${sn_folder}/${sample_name}_insert_counts.txt | sed 's/Contig/\#OTU ID/' | \
+cat ${sn_folder}/${sample_name}.txt | sed 's/Contig/\#OTU ID/' | \
     sed 's/ Read Count//' > ${sn_folder}/${sample_name}.tsv
 biom convert -i ${sn_folder}/${sample_name}.txt -o ${sn_folder}/${sample_name}.biom --to-hdf5
 
