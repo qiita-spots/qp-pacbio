@@ -28,19 +28,23 @@ mkdir -p ${out_folder}/filtered/
 sn_folder=${out_folder}/bioms/${sample_name}
 mkdir -p ${sn_folder}
 
+txt=${sn_folder}/${sample_name}.txt
+tsv=${txt/.txt/.tsv}
 coverm contig --single $filename --reference ${db_folder}/All_synDNA_inserts.fasta --mapper minimap2-hifi \
     --min-read-percent-identity 0.95 --min-read-aligned-percent 0.0 -m mean count --threads {{nprocs}} \
-    --output-file ${sn_folder}/${sample_name}.txt
+    --output-file ${txt}
+
+awk 'BEGIN {FS=OFS="\t"}; {print $1,$3}' ${txt} | \
+    sed 's/Contig/\#OTU ID/' | sed  's/All_synDNA_inserts.fasta\///' | \
+    sed  's/ Read Count//' | sed "s/${filename}/${sample_name}/" > ${tsv}
 
 # if counts is zero mark it as missing and stop
-counts=`awk '{sum += $NF} END {print sum}' ${sn_folder}/${sample_name}.txt`
+counts=`awk '{sum += $NF} END {print sum}' ${tsv}`
 if [[ "$counts" == "0" ]]; then
     touch {{output}}/failed_${SLURM_ARRAY_TASK_ID}.log
     exit 0
 fi
 
-cat ${sn_folder}/${sample_name}.txt | sed 's/Contig/\#OTU ID/' | \
-    sed 's/ Read Count//' > ${sn_folder}/${sample_name}.tsv
 biom convert -i ${sn_folder}/${sample_name}.txt -o ${sn_folder}/${sample_name}.biom --to-hdf5
 
 # removing AllsynDNA_plasmids_FASTA_ReIndexed_FINAL.fasta not coverm
