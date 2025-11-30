@@ -36,7 +36,7 @@ coverm contig --single $filename --reference ${db_folder}/All_synDNA_inserts.fas
 
 awk 'BEGIN {FS=OFS="\t"}; {print $1,$3}' ${txt} | \
     sed 's/Contig/\#OTU ID/' | sed  's/All_synDNA_inserts.fasta\///' | \
-    sed  's/ Read Count//' | sed "s/${filename}/${sample_name}/" > ${tsv}
+    sed  's/ Read Count//' | sed "s/${fn}/${sample_name}/" > ${tsv}
 
 # if counts is zero mark it as missing and stop
 counts=`awk '{sum += $NF} END {print sum}' ${tsv}`
