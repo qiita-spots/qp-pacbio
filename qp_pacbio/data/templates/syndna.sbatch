@@ -39,7 +39,7 @@ awk 'BEGIN {FS=OFS="\t"}; {print $1,$3}' ${txt} | \
     sed  's/ Read Count//' | sed "s/${fn}/${sample_name}/" > ${tsv}
 
 # if counts is zero mark it as missing and stop
-counts=`awk '{sum += $NF} END {print sum}' ${tsv}`
+counts=`tail -n +2 ${tsv} | awk '{sum += $NF} END {print sum}'`
 if [[ "$counts" == "0" ]]; then
     touch {{output}}/failed_${SLURM_ARRAY_TASK_ID}.log
     exit 0

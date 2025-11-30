@@ -327,7 +327,7 @@ class PacWoltkaSynDNATests(PacBioTests):
             "mkdir -p ${sn_folder}\n",
             "\n",
             "txt=${sn_folder}/${sample_name}.txt\n",
-            "tsv=${txt/.txt/.tsv}\n"
+            "tsv=${txt/.txt/.tsv}\n",
             "coverm contig --single $filename --reference ${db_folder}/All_synDNA_inserts.fasta --mapper minimap2-hifi \\\n",
             "    --min-read-percent-identity 0.95 --min-read-aligned-percent 0.0 -m mean count --threads 16 \\\n",
             "    --output-file ${txt}\n",
@@ -337,7 +337,7 @@ class PacWoltkaSynDNATests(PacBioTests):
             "    sed  's/ Read Count//' | sed \"s/${fn}/${sample_name}/\" > ${tsv} \n",
             "\n",
             "# if counts is zero mark it as missing and stop\n",
-            "counts=`awk '{sum += $NF} END {print sum}' ${tsv}`\n",
+            "counts=`tail -n +2 ${tsv} | awk '{sum += $NF} END {print sum}'`\n",
             'if [[ "$counts" == "0" ]]; then\n',
             f"    touch {out_dir}/failed_${{SLURM_ARRAY_TASK_ID}}.log\n",
             "    exit 0\n",
