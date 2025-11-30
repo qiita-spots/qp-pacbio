@@ -261,7 +261,7 @@ class PacWoltkaProfilingTests(PacBioTests):
             "done | parallel --halt now,fail=1 -j 16\n",
             "wait\n",
             "\n",
-            f"biom_merge_pacbio --base {out_dir} --type woltka\n",
+            f"biom_merge_pacbio --base {out_dir} --merge-type woltka\n",
             "\n",
             (
                 f'find {out_dir}/coverages/ -iname "*.cov" '
@@ -356,7 +356,7 @@ class PacWoltkaSynDNATests(PacBioTests):
             "coverm filter --bam-files ${out_folder}/${sample_name}_GCF_000184185_sorted.bam --min-read-percent-identity 99.9 --min-read-aligned-percent 95 --threads 16 -o ${out_folder}/${sample_name}_GCF_000184185.bam\n",
             "samtools view -O SAM -o ${out_folder}/${sample_name}_no_GCF_000184185_sorted.sam ${out_folder}/${sample_name}_GCF_000184185.bam\n",
             "awk '{print $1}' ${out_folder}/${sample_name}_no_GCF_000184185_sorted.sam > ${out_folder}/${sample_name}_GCF_000184185_reads_filtered.txt\n",
-            "seqkit grep -v -f ${out_folder}/${sample_name}_GCF_000184185_reads_filtered.txt ${out_folder}/${sample_name}_no_plasmid.fastq | gz > ${out_folder}/filtered/${fn}\n",
+            "seqkit grep -v -f ${out_folder}/${sample_name}_GCF_000184185_reads_filtered.txt ${out_folder}/${sample_name}_no_plasmid.fastq | gzip > ${out_folder}/filtered/${fn}\n",
             "\n",
             f"touch {out_dir}/completed_${{SLURM_ARRAY_TASK_ID}}.log",
         ]
@@ -379,7 +379,7 @@ class PacWoltkaSynDNATests(PacBioTests):
             f"{CONDA_ENVIRONMENT}\n",
             f"cd {out_dir}/\n",
             "\n",
-            f"biom_merge_pacbio --base {out_dir}/syndna --type syndna\n",
+            f"biom_merge_pacbio --base {out_dir}/syndna --merge-type syndna\n",
             "\n",
             f'# find {out_dir}/coverages/ -iname "*.cov" > {out_dir}/cov_files.txt\n',
             f"# micov consolidate --paths {out_dir}/cov_files.txt --lengths ${{len_map}} --output {out_dir}/coverages.tgz\n",

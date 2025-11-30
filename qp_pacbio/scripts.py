@@ -6,7 +6,6 @@
 #
 # The full license is in the file LICENSE, distributed with this software.
 # -----------------------------------------------------------------------------
-import enum
 from glob import glob
 from os import makedirs
 from os.path import join
@@ -157,22 +156,20 @@ def _biom_merge(tables):
     return full
 
 
-class BIOMMergeOptions(enum.Enum):
-    SYNDNA = enum.auto()
-    WOLTKA = enum.auto()
-
-
 @click.command()
 @click.option("--base", type=click.Path(exists=True), required=True)
-@click.option("--type", type=click.Choice(BIOMMergeOptions, case_sensitive=False))
-def biom_merge(base, type: BIOMMergeOptions):
+@click.option(
+    "--merge-type", type=click.Choice(["syndna", "woltka"], case_sensitive=False)
+)
+def biom_merge(base, merge_type):
     """Merges all PacBio biom tables"""
-    if type == BIOMMergeOptions.SYNDNA:
+    merge_type = merge_type.lower()
+    if merge_type == "syndna":
         ranks = ["syndna"]
-    elif type == BIOMMergeOptions.WOLTKA:
+    elif merge_type == "woltka":
         ranks = ["none", "per-gene", "ko", "ec", "pathway"]
     else:
-        raise ValueError(f"Type '{type}' not supported")
+        raise ValueError(f"Type '{merge_type}' not supported")
 
     for rank in ranks:
         rank = rank + ".biom"

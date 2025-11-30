@@ -58,6 +58,6 @@ samtools view -bS -@ {{ nprocs/2 | int }} ${out_folder}/${sample_name}_no_plasmi
 coverm filter --bam-files ${out_folder}/${sample_name}_GCF_000184185_sorted.bam --min-read-percent-identity 99.9 --min-read-aligned-percent 95 --threads {{nprocs}} -o ${out_folder}/${sample_name}_GCF_000184185.bam
 samtools view -O SAM -o ${out_folder}/${sample_name}_no_GCF_000184185_sorted.sam ${out_folder}/${sample_name}_GCF_000184185.bam
 awk '{print $1}' ${out_folder}/${sample_name}_no_GCF_000184185_sorted.sam > ${out_folder}/${sample_name}_GCF_000184185_reads_filtered.txt
-seqkit grep -v -f ${out_folder}/${sample_name}_GCF_000184185_reads_filtered.txt ${out_folder}/${sample_name}_no_plasmid.fastq | gz > ${out_folder}/filtered/${fn}
+seqkit grep -v -f ${out_folder}/${sample_name}_GCF_000184185_reads_filtered.txt ${out_folder}/${sample_name}_no_plasmid.fastq | gzip > ${out_folder}/filtered/${fn}
 
 touch {{output}}/completed_${SLURM_ARRAY_TASK_ID}.log

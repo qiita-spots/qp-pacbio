@@ -39,7 +39,7 @@ for f in `ls bioms/*/per-gene.biom`; do
 done | parallel --halt now,fail=1 -j {{nprocs}}
 wait
 
-biom_merge_pacbio --base {{output}} --type woltka
+biom_merge_pacbio --base {{output}} --merge-type woltka
 
 find {{output}}/coverages/ -iname "*.cov" > {{output}}/cov_files.txt
 micov consolidate --paths {{output}}/cov_files.txt --lengths ${len_map} --output {{output}}/coverages.tgz

@@ -13,7 +13,7 @@ set -e
 {{conda_environment}}
 cd {{output}}/
 
-biom_merge_pacbio --base {{output}}/syndna --type syndna
+biom_merge_pacbio --base {{output}}/syndna --merge-type syndna
 
 # find {{output}}/coverages/ -iname "*.cov" > {{output}}/cov_files.txt
 # micov consolidate --paths {{output}}/cov_files.txt --lengths ${len_map} --output {{output}}/coverages.tgz
