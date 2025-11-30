@@ -41,7 +41,7 @@ awk 'BEGIN {FS=OFS="\t"}; {print $1,$3}' ${txt} | \
 # if counts is zero mark it as missing and stop
 counts=`tail -n +2 ${tsv} | awk '{sum += $NF} END {print sum}'`
 if [[ "$counts" == "0" ]]; then
-    touch {{output}}/failed_${SLURM_ARRAY_TASK_ID}.log
+    echo ${sample_name} > {{output}}/failed_${SLURM_ARRAY_TASK_ID}.log
     exit 0
 fi
 

@@ -229,6 +229,9 @@ def generate_sample_list(qclient, artifact_id, out_dir):
     with open(out_fp, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
 
+    preparation_information = join(out_dir, "prep_info.tsv")
+    prep.set_index("sample_name").to_csv(preparation_information, sep="\t")
+
     return len(lines)
 
 
@@ -454,7 +457,16 @@ def syndna_processing(qclient, job_id, parameters, out_dir):
 
     errors = []
     ainfo = []
-    fp_biom = f"{out_dir}/syndna.biom"
+
+    failures = glob(f"{out_dir}/failed_*.log")
+    if failures:
+        errors.append("Samples failed: ")
+        for f in failures:
+            with open(f, "r") as fp:
+                errors.append(f.read())
+        return False, ainfo, "\n".join(errors)
+
+    fp_biom = f"{out_dir}/syndna/syndna.biom"
     # do we need to stor alignments?
     # fp_alng = f'{out_dir}/sams/final/alignment.tar'
 
