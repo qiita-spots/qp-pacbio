@@ -45,7 +45,7 @@ if [[ "$counts" == "0" ]]; then
     exit 0
 fi
 
-biom convert -i ${sn_folder}/${sample_name}.txt -o ${sn_folder}/${sample_name}.biom --to-hdf5
+biom convert -i ${tsv} -o ${sn_folder}/syndna.biom --to-hdf5
 
 # removing AllsynDNA_plasmids_FASTA_ReIndexed_FINAL.fasta not coverm
 minimap2 -x map-hifi -t {{nprocs}} -a --MD --eqx -o ${out_folder}/${sample_name}_plasmid.sam ${db_folder}/AllsynDNA_plasmids_FASTA_ReIndexed_FINAL.fasta $filename

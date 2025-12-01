@@ -463,14 +463,20 @@ def syndna_processing(qclient, job_id, parameters, out_dir):
         errors.append("Samples failed: ")
         for f in failures:
             with open(f, "r") as fp:
-                errors.append(f.read())
+                errors.append(fp.read())
         return False, ainfo, "\n".join(errors)
+
+    completed = len(glob(f"{out_dir}/completed_*.log"))
+    with open(f"{out_dir}/sample_list.txt") as fp:
+        samples = len(fp.readlines())
+
+    if completed != samples:
+        errors.append(f"There are {samples - completed} missing samples.")
 
     fp_biom = f"{out_dir}/syndna/syndna.biom"
     # do we need to stor alignments?
     # fp_alng = f'{out_dir}/sams/final/alignment.tar'
-
-    if exists(fp_biom):  # and exists(fp_alng):
+    if not errors and exists(fp_biom):  # and exists(fp_alng):
         # if we got to this point a preparation file should exist in
         # the output folder
         prep = pd.read_csv(f"{out_dir}/prep_info.tsv", index_col=None, sep="\t")
@@ -504,7 +510,7 @@ def syndna_processing(qclient, job_id, parameters, out_dir):
             "contact qiita.help@gmail.com for more information"
         )
 
-    fp_seqs = f"{out_dir}/filtered"
+    fp_seqs = f"{out_dir}/syndna/filtered"
     reads = []
     for f in glob(f"{fp_seqs}/*.fastq.gz"):
         reads.append((f, "raw_forward_seqs"))

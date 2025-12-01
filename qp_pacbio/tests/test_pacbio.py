@@ -343,7 +343,7 @@ class PacWoltkaSynDNATests(PacBioTests):
             "    exit 0\n",
             "fi\n",
             "\n",
-            "biom convert -i ${sn_folder}/${sample_name}.txt -o ${sn_folder}/${sample_name}.biom --to-hdf5\n",
+            "biom convert -i ${tsv} -o ${sn_folder}/syndna.biom --to-hdf5\n",
             "\n",
             "# removing AllsynDNA_plasmids_FASTA_ReIndexed_FINAL.fasta not coverm\n",
             "minimap2 -x map-hifi -t 16 -a --MD --eqx -o ${out_folder}/${sample_name}_plasmid.sam ${db_folder}/AllsynDNA_plasmids_FASTA_ReIndexed_FINAL.fasta $filename\n",
