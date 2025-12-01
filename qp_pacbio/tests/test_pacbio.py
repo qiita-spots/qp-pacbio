@@ -369,7 +369,7 @@ class PacWoltkaSynDNATests(PacBioTests):
             "#SBATCH -p qiita\n",
             "#SBATCH -N 1\n",
             "#SBATCH -n 1\n",
-            "#SBATCH --time 4:00:00\n",
+            "#SBATCH --time 14400\n",
             "#SBATCH --mem 60G\n",
             f"#SBATCH -o {out_dir}/finish/logs/%x-%A_%a.out\n",
             f"#SBATCH -e {out_dir}/finish/logs/%x-%A_%a.err\n",
