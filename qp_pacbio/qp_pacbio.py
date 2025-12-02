@@ -229,6 +229,9 @@ def generate_sample_list(qclient, artifact_id, out_dir):
     with open(out_fp, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
 
+    preparation_information = join(out_dir, "prep_info.tsv")
+    prep.set_index("sample_name").to_csv(preparation_information, sep="\t")
+
     return len(lines)
 
 
@@ -454,11 +457,26 @@ def syndna_processing(qclient, job_id, parameters, out_dir):
 
     errors = []
     ainfo = []
-    fp_biom = f"{out_dir}/syndna.biom"
+
+    failures = glob(f"{out_dir}/failed_*.log")
+    if failures:
+        errors.append("Samples failed: ")
+        for f in failures:
+            with open(f, "r") as fp:
+                errors.append(fp.read())
+        return False, ainfo, "\n".join(errors)
+
+    completed = len(glob(f"{out_dir}/completed_*.log"))
+    with open(f"{out_dir}/sample_list.txt") as fp:
+        samples = len(fp.readlines())
+
+    if completed != samples:
+        errors.append(f"There are {samples - completed} missing samples.")
+
+    fp_biom = f"{out_dir}/syndna/syndna.biom"
     # do we need to stor alignments?
     # fp_alng = f'{out_dir}/sams/final/alignment.tar'
-
-    if exists(fp_biom):  # and exists(fp_alng):
+    if not errors and exists(fp_biom):  # and exists(fp_alng):
         # if we got to this point a preparation file should exist in
         # the output folder
         prep = pd.read_csv(f"{out_dir}/prep_info.tsv", index_col=None, sep="\t")
@@ -492,7 +510,7 @@ def syndna_processing(qclient, job_id, parameters, out_dir):
             "contact qiita.help@gmail.com for more information"
         )
 
-    fp_seqs = f"{out_dir}/filtered"
+    fp_seqs = f"{out_dir}/syndna/filtered"
     reads = []
     for f in glob(f"{fp_seqs}/*.fastq.gz"):
         reads.append((f, "raw_forward_seqs"))
@@ -558,7 +576,7 @@ def generate_syndna_processing(qclient, job_id, out_dir, parameters, url):
         "mem_in_gb": step_resources["mem_in_gb"],
         "array_params": f"1-{njobs}%{step_resources['max_tasks']}",
     }
-    minimap2_script = _write_slurm(f"{out_dir}/minimap2", m2t, **params)
+    minimap2_script = _write_slurm(f"{out_dir}/syndna", m2t, **params)
 
     m2mt = JGT("syndna_finish.sbatch")
     step_resources = resources["finish"]
@@ -570,6 +588,6 @@ def generate_syndna_processing(qclient, job_id, out_dir, parameters, url):
         "mem_in_gb": step_resources["mem_in_gb"],
         "url": url,
     }
-    minimap2_merge_script = _write_slurm(f"{out_dir}/merge", m2mt, **params)
+    minimap2_finish_script = _write_slurm(f"{out_dir}/finish", m2mt, **params)
 
-    return minimap2_script, minimap2_merge_script
+    return minimap2_script, minimap2_finish_script

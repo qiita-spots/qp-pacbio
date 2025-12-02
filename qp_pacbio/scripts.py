@@ -6,7 +6,6 @@
 #
 # The full license is in the file LICENSE, distributed with this software.
 # -----------------------------------------------------------------------------
-import enum
 from glob import glob
 from os import makedirs
 from os.path import join
@@ -21,6 +20,7 @@ from qp_pacbio.qp_pacbio import (
     PACBIO_PROCESSING_STEPS,
     generate_minimap2_processing,
     generate_sample_list,
+    generate_syndna_processing,
     pacbio_generate_templates,
 )
 from qp_pacbio.util import client_connect
@@ -57,18 +57,23 @@ def execute(url, job_id, output_dir):
         command = job_info["command"]
         artifact_id = parameters["artifact"]
 
-        if command == "Woltka v0.1.7, minimap2":
-            main_fp, merge_fp = generate_minimap2_processing(
+        regular_commands = {
+            "Woltka v0.1.7, minimap2": generate_minimap2_processing,
+            "Remove SynDNA plasmid, insert, & GCF_000184185 reads (minimap2)": generate_syndna_processing,
+        }
+
+        if command in regular_commands.keys():
+            first_fp, second_fp = regular_commands[command](
                 qclient, job_id, output_dir, parameters, url
             )
 
             # Submitting jobs and returning id
-            main_job = run(["sbatch", main_fp], stdout=PIPE)
-            main_job_id = main_job.stdout.decode("utf8").split()[-1]
-            cmd = ["sbatch", "-d", f"afterok:{main_job_id}", merge_fp]
-            merge_job = run(cmd, stdout=PIPE)
-            merge_job_id = merge_job.stdout.decode("utf8").split()[-1]
-            print(f"{main_job_id}, {merge_job_id}")
+            first_job = run(["sbatch", first_fp], stdout=PIPE)
+            first_job_id = first_job.stdout.decode("utf8").split()[-1]
+            cmd = ["sbatch", "-d", f"afterok:{first_job_id}", second_fp]
+            second_job = run(cmd, stdout=PIPE)
+            second_job_id = second_job.stdout.decode("utf8").split()[-1]
+            print(f"{first_job_id}, {second_job_id}")
             qclient.update_job_step(job_id, "Step 2 of 4: Aligning sequences")
         elif command == "PacBio processing":
             frp = join(output_dir, "results")
@@ -151,22 +156,20 @@ def _biom_merge(tables):
     return full
 
 
-class BIOMMergeOptions(enum.Enum):
-    SYNDNA = enum.auto()
-    WOLTKA = enum.auto()
-
-
 @click.command()
 @click.option("--base", type=click.Path(exists=True), required=True)
-@click.option("--type", type=click.Choice(BIOMMergeOptions, case_sensitive=False))
-def biom_merge(base, type: BIOMMergeOptions):
+@click.option(
+    "--merge-type", type=click.Choice(["syndna", "woltka"], case_sensitive=False)
+)
+def biom_merge(base, merge_type):
     """Merges all PacBio biom tables"""
-    if type == BIOMMergeOptions.SYNDNA:
+    merge_type = merge_type.lower()
+    if merge_type == "syndna":
         ranks = ["syndna"]
-    elif type == BIOMMergeOptions.WOLTKA:
+    elif merge_type == "woltka":
         ranks = ["none", "per-gene", "ko", "ec", "pathway"]
     else:
-        raise ValueError(f"Type '{type}' not supported")
+        raise ValueError(f"Type '{merge_type}' not supported")
 
     for rank in ranks:
         rank = rank + ".biom"
