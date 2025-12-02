@@ -8,6 +8,7 @@
 from qiita_client import QiitaCommand, QiitaPlugin
 
 from .qp_pacbio import (
+    feature_table_generation,
     minimap2_processing,
     pacbio_processing,
     syndna_processing,
@@ -90,3 +91,28 @@ pacbio_processing_cmd = QiitaCommand(
     dflt_param_set,
 )
 plugin.register_command(pacbio_processing_cmd)
+
+#
+# feature table generation
+#
+
+req_params = {
+    "artifact": ("artifact", ["job-output-folder"]),
+}
+opt_params = {"percent-identity": ("float", "0.995")}
+outputs = {
+    "Merged LCG/MAG feature table": "BIOM",
+}
+dflt_param_set = {
+    "Default": {"percent-identity": 0.995},
+}
+ft_cmd = QiitaCommand(
+    "Feature Table Generation",
+    "Feature Table Generation from LCG/MAG",
+    feature_table_generation,
+    req_params,
+    opt_params,
+    outputs,
+    dflt_param_set,
+)
+plugin.register_command(ft_cmd)

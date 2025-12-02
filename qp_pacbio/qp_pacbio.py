@@ -591,3 +591,117 @@ def generate_syndna_processing(qclient, job_id, out_dir, parameters, url):
     minimap2_finish_script = _write_slurm(f"{out_dir}/finish", m2mt, **params)
 
     return minimap2_script, minimap2_finish_script
+
+
+def feature_table_generation(qclient, job_id, parameters, out_dir):
+    """Merges LCG/MAG and generates feature tables
+
+    Parameters
+    ----------
+    qclient : tgp.qiita_client.QiitaClient
+        Qiita server client.
+    job_id : str
+        Job id.
+    parameters : dict
+        Parameters for this job.
+    out_dir : str
+        Output directory.
+
+    Returns
+    -------
+    bool, list, str
+        Results tuple for Qiita.
+    """
+    qclient.update_job_step(job_id, "Commands finished")
+    ainfo = []
+    errors = []
+
+    return True, ainfo, "".join(errors)
+
+
+def generate_feature_table_scripts(qclient, job_id, out_dir, parameters, url):
+    """generates feature table from LCG/MAG scripts.
+
+    Parameters
+    ----------
+    qclient : tgp.qiita_client.QiitaClient
+        Qiita server client.
+    job_id : str
+        Job id.
+    out_dir : str
+        Output directory.
+    parameters : dict
+        Parameters for this job.
+    url : str
+        URL to send the respose, finish the job.
+
+    Returns
+    -------
+    str, str
+        Returns the two filepaths of the slurm scripts
+    """
+    resources = RESOURCES["Feature Table Generation"]
+    main_parameters = {
+        "conda_environment": CONDA_ENVIRONMENT,
+        "output": out_dir,
+        "qjid": job_id,
+    }
+
+    qclient.update_job_step(
+        job_id, "Step 1 of 4: Collecting info and generating submission"
+    )
+
+    njobs = 0
+    for aid in parameters["artifact"]:
+        # for each artifact we want to get their files, preps and parents file data
+        files, prep = qclient.artifact_and_preparation_files(aid)
+        prep_fp = join(out_dir, f"{aid}_prep_info_artifact.tsv")
+        prep.set_index("sample_name").to_csv(prep_fp, sep="\t")
+
+        with open(join(out_dir, f"{aid}_folders.tsv"), "w") as fp:
+            fp.write("\n".join(files["directory"]))
+
+        for pid in qclient.get("/qiita_db/artifacts/%s/" % aid)["parents"]:
+            files, prep = qclient.artifact_and_preparation_files(pid)
+            lookup = prep.set_index("run_prefix")["sample_name"].to_dict()
+            lines = []
+            for _, (fwd, _) in files.items():
+                fwd_fp = fwd["filepath"]
+                sname = search_by_filename(basename(fwd_fp), lookup)
+                lines.append(f"{sname}\t{fwd_fp}")
+
+            out_fp = join(out_dir, f"{aid}_{pid}_sample_list.txt")
+            with open(out_fp, "w") as f:
+                f.write("\n".join(lines))
+
+            njobs += len(lines)
+
+    qclient.update_job_step(
+        job_id,
+        "Step 2 of 4: Creating submission templates",
+    )
+
+    m2t = JGT("feature_table_merge.sbatch")
+    step_resources = resources["merge"]
+    params = main_parameters | {
+        "job_name": f"sd_{job_id}",
+        "node_count": step_resources["node_count"],
+        "nprocs": step_resources["nprocs"],
+        "wall_time_limit": step_resources["wall_time_limit"],
+        "mem_in_gb": step_resources["mem_in_gb"],
+    }
+    merge_script = _write_slurm(f"{out_dir}/merge", m2t, **params)
+
+    # m2mt = JGT("syndna_finish.sbatch")
+    # step_resources = resources["finish"]
+    # params = main_parameters | {
+    #     "job_name": f"me_{job_id}",
+    #     "node_count": step_resources["node_count"],
+    #     "nprocs": step_resources["nprocs"],
+    #     "wall_time_limit": step_resources["wall_time_limit"],
+    #     "mem_in_gb": step_resources["mem_in_gb"],
+    #     "url": url,
+    # }
+    # minimap2_finish_script = _write_slurm(f"{out_dir}/finish", m2mt, **params)
+
+    return merge_script

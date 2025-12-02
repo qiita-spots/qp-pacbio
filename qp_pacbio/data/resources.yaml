@@ -70,3 +70,15 @@ Remove SynDNA plasmid, insert, & GCF_000184185 reads (minimap2):
     nprocs: 1
     wall_time_limit: 4:00:00
     mem_in_gb: 4
+Feature Table Generation:
+  merge:
+    node_count: 1
+    nprocs: 32
+    wall_time_limit: 5:00:00
+    mem_in_gb: 50
+  remap:
+    node_count: 1
+    nprocs: 12
+    wall_time_limit: 2:00:00
+    mem_in_gb: 50
+    max_tasks: 8

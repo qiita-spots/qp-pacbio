@@ -7,8 +7,9 @@
 # -----------------------------------------------------------------------------
 
 from json import dumps
-from os import remove
-from os.path import exists, isdir, join
+from os import makedirs, remove
+from os.path import dirname, exists, isdir, join
+from pathlib import Path
 from shutil import copyfile, rmtree
 from tempfile import mkdtemp
 from unittest import main
@@ -18,11 +19,13 @@ from qiita_client.testing import PluginTestCase
 from qp_pacbio import plugin
 from qp_pacbio.qp_pacbio import (
     CONDA_ENVIRONMENT,
+    generate_feature_table_scripts,
     generate_minimap2_processing,
     generate_sample_list,
     generate_syndna_processing,
     pacbio_generate_templates,
 )
+from qp_pacbio.util import plugin_details
 
 # Exact expected Step-1 script matching your template.
 # Escape ${...} -> ${{...}} and awk braces -> '{{print $1}}' etc.
@@ -390,6 +393,113 @@ class PacWoltkaSynDNATests(PacBioTests):
             f"finish_qp_pacbio https://test.test.edu/ my-job-id {out_dir}",
         ]
         self.assertEqual(obs_finish, exp_merge)
+
+
+class PacBioFeatureTableTests(PacBioTests):
+    def _helper_woltka_bowtie(self):
+        prep_info_dict = {
+            "SKB8.640193": {"run_prefix": "S22205_S104"},
+            "SKD8.640184": {"run_prefix": "S22282_S102"},
+        }
+        # creating "replicate" preps and data
+        in_dir = mkdtemp()
+        aids = []
+        for i in range(2):
+            data = {
+                "prep_info": dumps(prep_info_dict),
+                # magic #1 = testing study
+                "study": 1,
+                "data_type": "Metagenomic",
+            }
+            pid = self.qclient.post("/apitest/prep_template/", data=data)["prep"]
+
+            # creating folder structures to then insert artifacts
+            self._clean_up_files.append(in_dir)
+            results = join(in_dir, "tmp", f"results_{i}")
+            for folder in ["small_LCG", "MAG", "LCG"]:
+                for sample in ["1.SKB8.640193", "1.SKD8.640184"]:
+                    makedirs(f"{results}/{sample}/{folder}")
+            Path(f"{results}/1.SKB8.640193/1.SKD8.640184.checkm.txt.gz").touch()
+            Path(f"{results}/1.SKD8.640184/1.SKD8.640184.checkm.txt.gz").touch()
+            Path(f"{results}/1.SKB8.640193/1.SKD8.640184.noLCG.fna.gz").touch()
+            Path(f"{results}/1.SKD8.640184/1.SKD8.640184.noLCG.fna.gz").touch()
+
+            Path(
+                f"{results}/1.SKB8.640193/LCG/1.SKD8.640184_MaxBin_bin.1.fna.gz"
+            ).touch()
+            Path(
+                f"{results}/1.SKB8.640193/LCG/1.SKD8.640184_MaxBin_bin.0.fna.gz"
+            ).touch()
+            Path(
+                f"{results}/1.SKD8.640184/LCG/1.SKD8.640184_MaxBin_bin.1.fna.gz"
+            ).touch()
+            Path(
+                f"{results}/1.SKD8.640184/LCG/1.SKD8.640184_MaxBin_bin.0.fna.gz"
+            ).touch()
+
+            Path(
+                f"{results}/1.SKB8.640193/MAG/1.SKB8.640193.s37.ctg000038c.fna.gz"
+            ).touch()
+            Path(
+                f"{results}/1.SKB8.640193/MAG/1.SKB8.640193.s40.ctg000042c.fna.gz"
+            ).touch()
+            Path(
+                f"{results}/1.SKD8.640184/MAG/1.SKD8.640184.s37.ctg000038c.fna.gz"
+            ).touch()
+            Path(
+                f"{results}/1.SKD8.640184/MAG/1.SKD8.640184.s40.ctg000042c.fna.gz"
+            ).touch()
+
+            data = {
+                "filepaths": dumps(
+                    [
+                        (results, "directory"),
+                    ]
+                ),
+                "type": "job-output-folder",
+                "name": "Test artifact",
+                "prep": pid,
+            }
+            aid = self.qclient.post("/apitest/artifact/", data=data)["artifact"]
+            aids.append(aid)
+            # retriving final location of files to delete them and avoid future errors
+            fps, _ = self.qclient.artifact_and_preparation_files(aid)
+            self._clean_up_files.append(dirname(fps["directory"][0]))
+
+        data = {
+            "user": "demo@microbio.me",
+            "command": dumps(
+                [
+                    plugin_details["name"],
+                    plugin_details["version"],
+                    "Feature Table Generation",
+                ]
+            ),
+            "status": "running",
+            "parameters": dumps({"artifact": aids}),
+        }
+        job_id = self.qclient.post("/apitest/processing_job/", data=data)["job"]
+
+        return job_id
+
+    def test_pacbio_feature_table(self):
+        job_id = self._helper_woltka_bowtie()
+        job_info = self.qclient.get_job_info(job_id)
+        parameters = job_info["parameters"]
+
+        out_dir = mkdtemp()
+        self._clean_up_files.append(out_dir)
+
+        url = "https://test.test.edu/"
+        merge_fp = generate_feature_table_scripts(
+            self.qclient, job_id, out_dir, parameters, url
+        )
+
+        with open(merge_fp, "r") as f:
+            obs_merge = f.readlines()
+
+        exp_merge = []
+        self.assertEqual(obs_merge, exp_merge)
 
 
 if __name__ == "__main__":
