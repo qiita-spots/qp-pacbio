@@ -294,9 +294,11 @@ class PacWoltkaSynDNATests(PacBioTests):
             self.qclient, job_id, out_dir, params, url
         )
         with open(main_fp, "r") as f:
-            obs_main = f.readlines()
+            # ignoring comments
+            obs_main = [line for line in f.readlines() if not line.startswith("# ")]
         with open(finish_fp, "r") as f:
-            obs_finish = f.readlines()
+            # ignoring comments
+            obs_finish = [line for line in f.readlines() if not line.startswith("# ")]
 
         exp_main = [
             "#!/bin/bash\n",
@@ -339,7 +341,6 @@ class PacWoltkaSynDNATests(PacBioTests):
             "    sed 's/Contig/\#OTU ID/' | sed  's/All_synDNA_inserts.fasta\///' | \\\n",
             "    sed  's/ Read Count//' | sed \"s/${fn}/${sample_name}/\" > ${tsv}\n",
             "\n",
-            "# if counts is zero mark it as missing and stop\n",
             "counts=`tail -n +2 ${tsv} | awk '{sum += $NF} END {print sum}'`\n",
             'if [[ "$counts" == "0" ]]; then\n',
             f"    echo ${{sample_name}} > {out_dir}/failed_${{SLURM_ARRAY_TASK_ID}}.log\n",
@@ -348,12 +349,10 @@ class PacWoltkaSynDNATests(PacBioTests):
             "\n",
             "biom convert -i ${tsv} -o ${sn_folder}/syndna.biom --to-hdf5\n",
             "\n",
-            "# removing AllsynDNA_plasmids_FASTA_ReIndexed_FINAL.fasta not coverm\n",
             "minimap2 -x map-hifi -t 16 -a --MD --eqx -o ${out_folder}/${sample_name}_plasmid.sam ${db_folder}/AllsynDNA_plasmids_FASTA_ReIndexed_FINAL.fasta $filename\n",
             "samtools view -F 4 -@ 16 ${out_folder}/${sample_name}_plasmid.sam | awk '{print $1}' | sort -u > ${out_folder}/${sample_name}_plasmid_mapped.txt\n",
             "seqkit grep -v -f ${out_folder}/${sample_name}_plasmid_mapped.txt $filename > ${out_folder}/${sample_name}_no_plasmid.fastq\n",
             "\n",
-            "# removing GCF_000184185.1_ASM18418v1_genomic_chroso.fna use coverm\n",
             "minimap2 -x map-hifi -t 16 -a --MD --eqx -o ${out_folder}/${sample_name}_GCF_000184185.sam ${db_folder}/GCF_000184185.1_ASM18418v1_genomic_chroso.fna ${out_folder}/${sample_name}_no_plasmid.fastq\n",
             "samtools view -bS -@ 8.0 ${out_folder}/${sample_name}_no_plasmid.fastq | samtools sort -@ 8.0 -O bam -o ${out_folder}/${sample_name}_GCF_000184185_sorted.bam\n",
             "coverm filter --bam-files ${out_folder}/${sample_name}_GCF_000184185_sorted.bam --min-read-percent-identity 99.9 --min-read-aligned-percent 95 --threads 16 -o ${out_folder}/${sample_name}_GCF_000184185.bam\n",
@@ -384,11 +383,7 @@ class PacWoltkaSynDNATests(PacBioTests):
             "\n",
             f"biom_merge_pacbio --base {out_dir}/syndna --merge-type syndna\n",
             "\n",
-            f'# find {out_dir}/coverages/ -iname "*.cov" > {out_dir}/cov_files.txt\n',
-            f"# micov consolidate --paths {out_dir}/cov_files.txt --lengths ${{len_map}} --output {out_dir}/coverages.tgz\n",
             "\n",
-            "# cd alignment\n",
-            "# tar -cvf ../alignment.tar *.sam.xz\n",
             "\n",
             f"finish_qp_pacbio https://test.test.edu/ my-job-id {out_dir}",
         ]
