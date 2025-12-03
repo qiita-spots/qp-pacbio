@@ -515,7 +515,7 @@ class PacBioFeatureTableTests(PacBioTests):
             "\n",
             "source ~/.bashrc\n",
             "set -e\n",
-            "source ~/.bash_profile; conda activate qp_pacbio_2025.9\n",
+            f"{CONDA_ENVIRONMENT}\n",
             f"cd {out_dir}/\n",
             "\n",
             "\n",
@@ -557,7 +557,11 @@ class PacBioFeatureTableTests(PacBioTests):
             "    --output-representative-fasta-directory-copy dereplicated\n",
             "    --output-cluster-definition dereplicated.txt\n",
             "    --ani 0.995 \\\n",
-            "    --precluster-method finch",
+            "    --precluster-method finch\n",
+            "\n",
+            "gtdbtk classify_wf --genome_dir dereplicated \\\n",
+            "    --out_dir ./dereplicated_gtdbtk --cpus {{nprocs}} \\\n",
+            "    --pplacer_cpus 6 -x fna --skip_ani_screen",
         ]
         self.assertEqual(obs_merge, exp_merge)
 

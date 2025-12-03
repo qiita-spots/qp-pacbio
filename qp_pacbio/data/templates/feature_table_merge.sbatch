@@ -59,3 +59,9 @@ galah cluster --checkm-tab-table merged_checkm.txt --genome-fasta-directory all_
     --output-cluster-definition dereplicated.txt
     --ani {{percent_identity}} \
     --precluster-method finch
+
+# note that we are limiting pplacer_cpus to 6 to reduce the
+# memory requirements
+gtdbtk classify_wf --genome_dir dereplicated \
+    --out_dir ./dereplicated_gtdbtk --cpus {{nprocs}} \
+    --pplacer_cpus 6 -x fna --skip_ani_screen
