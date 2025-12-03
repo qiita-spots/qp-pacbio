@@ -397,21 +397,29 @@ class PacWoltkaSynDNATests(PacBioTests):
 
 class PacBioFeatureTableTests(PacBioTests):
     def _helper_woltka_bowtie(self):
-        prep_info_dict = {
-            "SKB8.640193": {"run_prefix": "S22205_S104"},
-            "SKD8.640184": {"run_prefix": "S22282_S102"},
-        }
-        # creating "replicate" preps and data
-        in_dir = mkdtemp()
         aids = []
+        in_dir = mkdtemp()
+        self._clean_up_files.append(in_dir)
         for i in range(2):
+            parent_id = self._insert_data()
+
+            # now that we have a parent we can create a job
+            # to simulate that we process the parent to create
+            # the inputs for this tests
+
             data = {
-                "prep_info": dumps(prep_info_dict),
-                # magic #1 = testing study
-                "study": 1,
-                "data_type": "Metagenomic",
+                "user": "demo@microbio.me",
+                "command": dumps(
+                    [
+                        plugin_details["name"],
+                        plugin_details["version"],
+                        "PacBio processing",
+                    ]
+                ),
+                "status": "running",
+                "parameters": dumps({"artifact": parent_id}),
             }
-            pid = self.qclient.post("/apitest/prep_template/", data=data)["prep"]
+            job_id = self.qclient.post("/apitest/processing_job/", data=data)["job"]
 
             # creating folder structures to then insert artifacts
             self._clean_up_files.append(in_dir)
@@ -458,7 +466,8 @@ class PacBioFeatureTableTests(PacBioTests):
                 ),
                 "type": "job-output-folder",
                 "name": "Test artifact",
-                "prep": pid,
+                "parents": dumps([parent_id]),
+                "job_id": job_id,
             }
             aid = self.qclient.post("/apitest/artifact/", data=data)["artifact"]
             aids.append(aid)
@@ -480,10 +489,10 @@ class PacBioFeatureTableTests(PacBioTests):
         }
         job_id = self.qclient.post("/apitest/processing_job/", data=data)["job"]
 
-        return job_id
+        return job_id, aids
 
     def test_pacbio_feature_table(self):
-        job_id = self._helper_woltka_bowtie()
+        job_id, aids = self._helper_woltka_bowtie()
         job_info = self.qclient.get_job_info(job_id)
         parameters = job_info["parameters"]
 
@@ -496,10 +505,76 @@ class PacBioFeatureTableTests(PacBioTests):
         )
 
         with open(merge_fp, "r") as f:
-            obs_merge = f.readlines()
+            obs_merge = [line for line in f.readlines() if not line.startswith("# ")]
 
-        exp_merge = []
+        exp_merge = [
+            "#!/bin/bash\n",
+            f"#SBATCH -J sd_{job_id}\n",
+            "#SBATCH -p qiita\n",
+            "#SBATCH -N 1\n",
+            "#SBATCH -n 32\n",
+            "#SBATCH --time 18000\n",
+            "#SBATCH --mem 50G\n",
+            f"#SBATCH -o {out_dir}/merge/logs/%x-%A.out\n",
+            f"#SBATCH -e {out_dir}/merge/logs/%x-%A.err\n",
+            "\n",
+            "source ~/.bashrc\n",
+            "set -e\n",
+            "source ~/.bash_profile; conda activate qp_pacbio_2025.9\n",
+            f"cd {out_dir}/\n",
+            "\n",
+            "\n",
+            "mkdir -p LCG MAG checkm\n",
+            "\n",
+            "for folder in $(cat *_folders.tsv); do\n",
+            "    ffn=$(basename $folder);\n",
+            "    aid=${ffn%%_*};\n",
+            "    # the pattern of the folers is [folder]/results/[LCG|MAG]/[sample-id]/\n",
+            "    for f in $(ls ${f}/*/LCG/*/*fna.gz); do\n",
+            "        bn=$(basename ${f/.gz/});\n",
+            '        echo "gunzip -c ${f} > LCG/${aid}_${bn}"\n',
+            "    done\n",
+            "    for f in $(ls ${f}/*/MAG/*/*fna.gz); do\n",
+            "        bn=$(basename ${f/.gz/});\n",
+            '        echo "gunzip -c ${f} > MAG/${aid}_${bn}"\n',
+            "    done\n",
+            "    # the pattern for txts is [folder]/results/*checkm.txt.gz\n",
+            "    for f in $(ls ${f}/*/*checkm.txt.gz); do\n",
+            "        bn=$(basename ${f/.gz/});\n",
+            '        echo "zcat ${f} > checkm/${aid}_${bn}";\n',
+            "    done\n",
+            "done | parallel --halt now,fail=1 -j 32\n",
+            "\n",
+            "checkm_files=$(ls checkm/*.txt)\n",
+            "head -n 1 ${checkm_files[0]} > merged_checkm.txt\n",
+            "for f in checkm_files; do\n",
+            "    bn=$(basename $f)\n",
+            "    aid=${bn%%_*}\n",
+            '    awk FNR!=1 ${f} | awk "{ print ${aid}$0 }" >> merged_checkm.txt;\n',
+            "done\n",
+            "\n",
+            "checkm lineage_wf LCG LCG_checkm -x fna -t 32 --tab_table -f LCG_checkm.txt --pplacer_threads 1\n",
+            "awk FNR!=1 LCG_checkm.txt >> merged_checkm.txt;\n",
+            "\n",
+            "galah cluster --checkm-tab-table merged_checkm.txt --genome-fasta-directory all_fna \\\n",
+            "    -x fna --min-completeness 50 --max-contamination 10 --quality-formula dRep \\\n",
+            "    -t 32 --cluster-method fastani \\\n",
+            "    --output-representative-fasta-directory-copy dereplicated\n",
+            "    --output-cluster-definition dereplicated.txt\n",
+            "    --ani 0.995 \\\n",
+            "    --precluster-method finch",
+        ]
         self.assertEqual(obs_merge, exp_merge)
+
+        # checking the expected files and number of lines
+        for aid in aids:
+            with open(f"{out_dir}/{aid}_prep_info_artifact.tsv", "r") as fp:
+                self.assertEqual(3, len(fp.readlines()))
+            with open(f"{out_dir}/{aid}_folders.tsv", "r") as fp:
+                self.assertEqual(1, len(fp.readlines()))
+            # aid - 1, is a safe assumption as the child is created just after the parent
+            with open(f"{out_dir}/{aid}_{aid - 1}_sample_list.txt", "r") as fp:
+                self.assertEqual(2, len(fp.readlines()))
 
 
 if __name__ == "__main__":
