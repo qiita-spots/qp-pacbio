@@ -11,7 +11,7 @@
 source ~/.bashrc
 set -e
 {{conda_environment}}
-cd {{output}}/
+cd {{output}}/merge
 
 # The expected files here are:
 # {aid}_prep_info_artifact.tsv : preparation for each artifact
@@ -62,6 +62,9 @@ galah cluster --checkm-tab-table merged_checkm.txt --genome-fasta-directory all_
 
 # note that we are limiting pplacer_cpus to 6 to reduce the
 # memory requirements
+export GTDBTK_DATA_PATH="/scratch/qp-pacbio/gtdbtk_v226_db/"
 gtdbtk classify_wf --genome_dir dereplicated \
-    --out_dir ./dereplicated_gtdbtk --cpus {{nprocs}} \
+    --out_dir dereplicated_gtdbtk --cpus {{nprocs}} \
     --pplacer_cpus 6 -x fna --skip_ani_screen
+
+cat *_sample_list.txt > sample_list.txt

@@ -559,9 +559,12 @@ class PacBioFeatureTableTests(PacBioTests):
             "    --ani 0.995 \\\n",
             "    --precluster-method finch\n",
             "\n",
+            'GTDBTK_DATA_PATH="/scratch/qp-pacbio/gtdbtk_v226_db/"\n',
             "gtdbtk classify_wf --genome_dir dereplicated \\\n",
             "    --out_dir ./dereplicated_gtdbtk --cpus 32 \\\n",
             "    --pplacer_cpus 6 -x fna --skip_ani_screen",
+            "\n",
+            "cat *_sample_list.txt > sample_list.txt\n",
         ]
         self.assertEqual(obs_merge, exp_merge)
 
