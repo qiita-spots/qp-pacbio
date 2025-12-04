@@ -61,7 +61,7 @@ def execute(url, job_id, output_dir):
         regular_commands = {
             "Woltka v0.1.7, minimap2": generate_minimap2_processing,
             "Remove SynDNA plasmid, insert, & GCF_000184185 reads (minimap2)": generate_syndna_processing,
-            "Feature Table Generation": generate_feature_table_scripts,
+            "Feature Table from LCG/MAG": generate_feature_table_scripts,
         }
 
         if command in regular_commands.keys():

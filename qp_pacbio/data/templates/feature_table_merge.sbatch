@@ -43,12 +43,11 @@ for file in $(ls ../*_folders.tsv); do
 done | parallel --halt now,fail=1 -j {{nprocs}}
 
 # merging the checkm files
-checkm_files=$(ls checkm/*.txt)
 head -n 1 $(ls checkm/*.txt | head -n 1) > merged_checkm.txt
-for f in ${checkm_files}; do
+for f in $(ls checkm/*.txt); do
     bn=$(basename $f)
     aid=${bn%%_*}
-    awk FNR!=1 ${f} | awk "{ print ${aid}$0 }" >> merged_checkm.txt;
+    awk -v aid=${aid}_ 'NR > 1 { print aid $0 }' ${f} >> merged_checkm.txt
 done
 
 checkm lineage_wf LCG LCG_checkm -x fna -t {{nprocs}} --tab_table -f LCG_checkm.txt --pplacer_threads 1
@@ -68,5 +67,8 @@ export GTDBTK_DATA_PATH="/scratch/qp-pacbio/gtdbtk_v226_db/"
 gtdbtk classify_wf --genome_dir dereplicated \
     --out_dir dereplicated_gtdbtk --cpus {{nprocs}} \
     --pplacer_cpus 6 -x fna --skip_ani_screen
+
+ls ${PWD}/dereplicated/* > genomes.txt
+GToTree -f genomes.txt -o phylogeny -j {{nprocs}} -H Bacteria -c {{GToTree_c}} -G {{GToTree_G}}
 
 cat *_sample_list.txt > sample_list.txt

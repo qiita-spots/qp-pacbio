@@ -640,7 +640,7 @@ def generate_feature_table_scripts(qclient, job_id, out_dir, parameters, url):
     str, str
         Returns the two filepaths of the slurm scripts
     """
-    resources = RESOURCES["Feature Table Generation"]
+    resources = RESOURCES["Feature Table from LCG/MAG"]
     main_parameters = {
         "conda_environment": CONDA_ENVIRONMENT,
         "output": out_dir,
@@ -690,6 +690,8 @@ def generate_feature_table_scripts(qclient, job_id, out_dir, parameters, url):
         "wall_time_limit": step_resources["wall_time_limit"],
         "mem_in_gb": step_resources["mem_in_gb"],
         "percent_identity": parameters["percent-identity"],
+        "GToTree_c": parameters["GToTree-c"],
+        "GToTree_G": parameters["GToTree-G"],
     }
     merge_script = _write_slurm(f"{out_dir}/merge", m2t, **params)
 

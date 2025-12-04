@@ -476,7 +476,7 @@ class PacBioFeatureTableTests(PacBioTests):
                 [
                     plugin_details["name"],
                     plugin_details["version"],
-                    "Feature Table Generation",
+                    "Feature Table from LCG/MAG",
                 ]
             ),
             "status": "running",
@@ -544,12 +544,11 @@ class PacBioFeatureTableTests(PacBioTests):
             "    done\n",
             "done | parallel --halt now,fail=1 -j 32\n",
             "\n",
-            "checkm_files=$(ls checkm/*.txt)\n",
             "head -n 1 $(ls checkm/*.txt | head -n 1) > merged_checkm.txt\n",
-            "for f in ${checkm_files}; do\n",
+            "for f in $(ls checkm/*.txt); do\n",
             "    bn=$(basename $f)\n",
             "    aid=${bn%%_*}\n",
-            '    awk FNR!=1 ${f} | awk "{ print ${aid}$0 }" >> merged_checkm.txt;\n',
+            "    awk -v aid=${aid}_ 'NR > 1 { print aid $0 }' ${f} >> merged_checkm.txt\n",
             "done\n",
             "\n",
             "checkm lineage_wf LCG LCG_checkm -x fna -t 32 --tab_table -f LCG_checkm.txt --pplacer_threads 1\n",
@@ -567,6 +566,9 @@ class PacBioFeatureTableTests(PacBioTests):
             "gtdbtk classify_wf --genome_dir dereplicated \\\n",
             "    --out_dir dereplicated_gtdbtk --cpus 32 \\\n",
             "    --pplacer_cpus 6 -x fna --skip_ani_screen\n",
+            "\n",
+            "ls ${PWD}/dereplicated/* > genomes.txt\n",
+            "GToTree -f genomes.txt -o phylogeny -j 32 -H Bacteria -c 0.4 -G 0.4\n",
             "\n",
             "cat *_sample_list.txt > sample_list.txt",
         ]

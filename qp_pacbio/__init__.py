@@ -99,15 +99,23 @@ plugin.register_command(pacbio_processing_cmd)
 req_params = {
     "artifact": ("artifact", ["job-output-folder"]),
 }
-opt_params = {"percent-identity": ("float", "0.995")}
+opt_params = {
+    "percent-identity": ("float", "0.995"),
+    "GToTree-c": ("float", "0.4"),
+    "GToTree-G": ("float", "0.4"),
+}
 outputs = {
     "Merged LCG/MAG feature table": "BIOM",
 }
 dflt_param_set = {
-    "Default": {"percent-identity": 0.995},
+    "Default": {
+        "percent-identity": 0.995,
+        "GToTree-c": 0.4,
+        "GToTree-G": 0.4,
+    },
 }
 ft_cmd = QiitaCommand(
-    "Feature Table Generation",
+    "Feature Table from LCG/MAG",
     "Feature Table Generation from LCG/MAG",
     feature_table_generation,
     req_params,
