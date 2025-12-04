@@ -560,7 +560,7 @@ class PacBioFeatureTableTests(PacBioTests):
             "    --precluster-method finch\n",
             "\n",
             "gtdbtk classify_wf --genome_dir dereplicated \\\n",
-            "    --out_dir ./dereplicated_gtdbtk --cpus {{nprocs}} \\\n",
+            "    --out_dir ./dereplicated_gtdbtk --cpus 32 \\\n",
             "    --pplacer_cpus 6 -x fna --skip_ani_screen",
         ]
         self.assertEqual(obs_merge, exp_merge)
