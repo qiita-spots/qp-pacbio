@@ -516,7 +516,7 @@ class PacBioFeatureTableTests(PacBioTests):
             "source ~/.bashrc\n",
             "set -e\n",
             f"{CONDA_ENVIRONMENT}\n",
-            f"cd {out_dir}/\n",
+            f"cd {out_dir}/merge\n",
             "\n",
             "\n",
             "mkdir -p LCG MAG checkm\n",
