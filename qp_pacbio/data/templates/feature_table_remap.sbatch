@@ -40,9 +40,7 @@ awk 'BEGIN {FS=OFS="\t"}; {print $1,$NF}' ${txt} | \
 
 # if counts is zero do not try to convert
 counts=`tail -n +2 ${tsv} | awk '{sum += $NF} END {print sum}'`
-if [[ "$counts" == "0" ]]; then
-    echo ${sample_name} > {{output}}/completed_${SLURM_ARRAY_TASK_ID}.log
-else
+if [[ "$counts" != "0" ]]; then
     biom convert -i ${tsv} -o ${sn_folder}/counts.biom --to-hdf5
 fi
 

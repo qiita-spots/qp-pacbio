@@ -693,16 +693,16 @@ def generate_feature_table_scripts(qclient, job_id, out_dir, parameters, url):
     }
     merge_script = _write_slurm(f"{out_dir}/merge", m2t, **params)
 
-    # m2mt = JGT("syndna_finish.sbatch")
-    # step_resources = resources["finish"]
-    # params = main_parameters | {
-    #     "job_name": f"me_{job_id}",
-    #     "node_count": step_resources["node_count"],
-    #     "nprocs": step_resources["nprocs"],
-    #     "wall_time_limit": step_resources["wall_time_limit"],
-    #     "mem_in_gb": step_resources["mem_in_gb"],
-    #     "url": url,
-    # }
-    # minimap2_finish_script = _write_slurm(f"{out_dir}/finish", m2mt, **params)
+    remt = JGT("feature_table_remap.sbatch")
+    step_resources = resources["remap"]
+    params = main_parameters | {
+        "job_name": f"re_{job_id}",
+        "node_count": step_resources["node_count"],
+        "nprocs": step_resources["nprocs"],
+        "wall_time_limit": step_resources["wall_time_limit"],
+        "mem_in_gb": step_resources["mem_in_gb"],
+        "array_params": f"1-{njobs}%{step_resources['max_tasks']}",
+    }
+    remap_script = _write_slurm(f"{out_dir}/remap", remt, **params)
 
-    return merge_script
+    return merge_script, remap_script

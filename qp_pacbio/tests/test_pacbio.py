@@ -318,7 +318,7 @@ class PacWoltkaSynDNATests(PacBioTests):
             f"out_folder={out_dir}/syndna\n",
             "mkdir -p ${out_folder}\n",
             "cd ${out_folder}\n",
-            "db_folder=/scratch/qp-pacbio/minimap2/syndna/\n",
+            "db_folder=/scratch/qp-pacbio/syndna/\n",
             "\n",
             "step=${SLURM_ARRAY_TASK_ID}\n",
             f"input=$(head -n $step {out_dir}/sample_list.txt | tail -n 1)\n",
@@ -495,12 +495,14 @@ class PacBioFeatureTableTests(PacBioTests):
         self._clean_up_files.append(out_dir)
 
         url = "https://test.test.edu/"
-        merge_fp = generate_feature_table_scripts(
+        merge_fp, remap_fp = generate_feature_table_scripts(
             self.qclient, job_id, out_dir, parameters, url
         )
 
         with open(merge_fp, "r") as f:
             obs_merge = [line for line in f.readlines() if not line.startswith("# ")]
+        with open(remap_fp, "r") as f:
+            obs_remap = [line for line in f.readlines() if not line.startswith("# ")]
 
         exp_merge = [
             "#!/bin/bash\n",
@@ -577,6 +579,56 @@ class PacBioFeatureTableTests(PacBioTests):
             # aid - 1, is a safe assumption as the child is created just after the parent
             with open(f"{out_dir}/{aid}_{aid - 1}_sample_list.txt", "r") as fp:
                 self.assertEqual(2, len(fp.readlines()))
+
+        exp_remap = [
+            "#!/bin/bash\n",
+            f"#SBATCH -J re_{job_id}\n",
+            "#SBATCH -p qiita\n",
+            "#SBATCH -N 1\n",
+            "#SBATCH -n 12\n",
+            "#SBATCH --time 7200\n",
+            "#SBATCH --mem 50G\n",
+            f"#SBATCH -o {out_dir}/remap/logs/%x-%A_%a.out\n",
+            f"#SBATCH -e {out_dir}/remap/logs/%x-%A_%a.err\n",
+            "#SBATCH --array 1-4%8\n",
+            "\n",
+            "source ~/.bashrc\n",
+            "set -e\n",
+            f"{CONDA_ENVIRONMENT}\n",
+            "\n",
+            "step=${SLURM_ARRAY_TASK_ID}\n",
+            f"input=$(head -n $step {out_dir}/merge/sample_list.txt | tail -n 1)\n",
+            "sample_name=`echo $input | awk '{print $1}'`\n",
+            "filename=`echo $input | awk '{print $2}'`\n",
+            "fn=`basename ${filename}`\n",
+            "\n",
+            "export TMPDIR=${out_folder}/tmp\n",
+            "mkdir -p TMPDIR\n",
+            "\n",
+            "\n",
+            f"out_folder={out_dir}/remap\n",
+            "sn_folder=${out_folder}/bioms/${sample_name}\n",
+            "mkdir -p ${sn_folder}\n",
+            "\n",
+            "txt=${sn_folder}/${sample_name}.txt\n",
+            "tsv=${txt/.txt/.tsv}\n",
+            "coverm genome -d dereplicated_gtdbtk -x fna --mapper minimap2-hifi -m covered_bases trimmed_mean mean length count \\\n",
+            "    --trim-min 0.05 --trim-max 0.95 --min-read-percent-identity  \\\n",
+            "    --min-read-aligned-percent 0.90 --min-covered-fraction 0 -t 12 \\\n",
+            "    --single ${filename} --output-file ${txt}\n",
+            "\n",
+            "awk 'BEGIN {FS=OFS=\"\\t\"}; {print $1,$NF}' ${txt} | \\\n",
+            "    sed 's/Contig/\\#OTU ID/' | sed  's/dereplicated_gtdbtk\\///' | \\\n",
+            "    sed  's/ Read Count//' | sed \"s/${fn}/${sample_name}/\" > ${tsv}\n",
+            "\n",
+            "counts=`tail -n +2 ${tsv} | awk '{sum += $NF} END {print sum}'`\n",
+            'if [[ "$counts" != "0" ]]; then\n',
+            "    biom convert -i ${tsv} -o ${sn_folder}/counts.biom --to-hdf5\n",
+            "fi\n",
+            "\n",
+            f"touch {out_dir}/completed_${{SLURM_ARRAY_TASK_ID}}.log",
+        ]
+        self.assertEqual(obs_remap, exp_remap)
 
 
 if __name__ == "__main__":
