@@ -684,7 +684,7 @@ def generate_feature_table_scripts(qclient, job_id, out_dir, parameters, url):
     m2t = JGT("feature_table_merge.sbatch")
     step_resources = resources["merge"]
     params = main_parameters | {
-        "job_name": f"sd_{job_id}",
+        "job_name": f"m_{job_id}",
         "node_count": step_resources["node_count"],
         "nprocs": step_resources["nprocs"],
         "wall_time_limit": step_resources["wall_time_limit"],

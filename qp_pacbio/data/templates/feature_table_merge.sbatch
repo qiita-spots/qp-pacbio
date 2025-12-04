@@ -21,22 +21,24 @@ cd {{output}}/merge
 # Step 1: create processing folders, note that all files need to be gunzip
 mkdir -p LCG MAG checkm
 
-for folder in $(cat *_folders.tsv); do
-    ffn=$(basename $folder);
-    aid=${ffn%%_*};
-    # the pattern of the folers is [folder]/results/[LCG|MAG]/[sample-id]/
-    for f in $(ls ${f}/*/LCG/*/*fna.gz); do
-        bn=$(basename ${f/.gz/});
-        echo "gunzip -c ${f} > LCG/${aid}_${bn}"
-    done
-    for f in $(ls ${f}/*/MAG/*/*fna.gz); do
-        bn=$(basename ${f/.gz/});
-        echo "gunzip -c ${f} > MAG/${aid}_${bn}"
-    done
-    # the pattern for txts is [folder]/results/*checkm.txt.gz
-    for f in $(ls ${f}/*/*checkm.txt.gz); do
-        bn=$(basename ${f/.gz/});
-        echo "zcat ${f} > checkm/${aid}_${bn}";
+for file in $(ls ../*_folders.tsv); do
+    for folder in $(cat ${file}); do
+        ffn=$(basename $folder);
+        aid=${ffn%%_*};
+        # the pattern of the folers is [folder]/results/[LCG|MAG]/[sample-id]/
+        for f in $(ls ${folder}/*/*/LCG/*fna.gz 2> /dev/null || true); do
+            bn=$(basename ${f/.gz/});
+            echo "gunzip -c ${f} > LCG/${aid}_${bn}"
+        done
+        for f in $(ls ${folder}/*/*/MAG/*fna.gz 2> /dev/null || true); do
+            bn=$(basename ${f/.gz/});
+            echo "gunzip -c ${f} > MAG/${aid}_${bn}"
+        done
+        # the pattern for txts is [folder]/results/*checkm.txt.gz
+        for f in $(ls ${folder}/*/*/*checkm.txt.gz); do
+            bn=$(basename ${f/.gz/});
+            echo "zcat ${f} > checkm/${aid}_${bn}";
+        done
     done
 done | parallel --halt now,fail=1 -j {{nprocs}}
 
