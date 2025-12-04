@@ -19,7 +19,7 @@ cd {{output}}/merge
 # {aid}_{pid}_sample_list.txt : the sample/files list of the artifact, {pid} is the parent id
 
 # Step 1: create processing folders, note that all files need to be gunzip
-mkdir -p LCG MAG checkm
+mkdir -p LCG all_fna checkm
 
 for file in $(ls ../*_folders.tsv); do
     for folder in $(cat ${file}); do
@@ -32,7 +32,7 @@ for file in $(ls ../*_folders.tsv); do
         done
         for f in $(ls ${folder}/*/*/MAG/*fna.gz 2> /dev/null || true); do
             bn=$(basename ${f/.gz/});
-            echo "gunzip -c ${f} > MAG/${aid}_${bn}"
+            echo "gunzip -c ${f} > all_fna/${aid}_${bn}"
         done
         # the pattern for txts is [folder]/results/*checkm.txt.gz
         for f in $(ls ${folder}/*/*/*checkm.txt.gz); do
@@ -53,11 +53,13 @@ done
 checkm lineage_wf LCG LCG_checkm -x fna -t {{nprocs}} --tab_table -f LCG_checkm.txt --pplacer_threads 1
 awk FNR!=1 LCG_checkm.txt >> merged_checkm.txt;
 
+mv LCG/*.fna all_fna/
+
 galah cluster --checkm-tab-table merged_checkm.txt --genome-fasta-directory all_fna \
     -x fna --min-completeness 50 --max-contamination 10 --quality-formula dRep \
     -t {{nprocs}} --cluster-method fastani \
-    --output-representative-fasta-directory-copy dereplicated
-    --output-cluster-definition dereplicated.txt
+    --output-representative-fasta-directory-copy dereplicated \
+    --output-cluster-definition dereplicated.txt \
     --ani {{percent_identity}} \
     --precluster-method finch
 
