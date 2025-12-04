@@ -44,8 +44,8 @@ done | parallel --halt now,fail=1 -j {{nprocs}}
 
 # merging the checkm files
 checkm_files=$(ls checkm/*.txt)
-head -n 1 ${checkm_files[0]} > merged_checkm.txt
-for f in checkm_files; do
+head -n 1 $(ls checkm/*.txt | head -n 1) > merged_checkm.txt
+for f in ${checkm_files}; do
     bn=$(basename $f)
     aid=${bn%%_*}
     awk FNR!=1 ${f} | awk "{ print ${aid}$0 }" >> merged_checkm.txt;
