@@ -45,6 +45,18 @@ Fasta_to_Contig2Bin.sh -i ./metabat2_bins -e fa | awk 'BEGIN{FS=OFS="\t"}{print 
 
 mkdir {{output}}/${folder}/${sample_name}
 
-DAS_Tool --bins=${sample_name}.concoct.tsv,${sample_name}.maxbin2.tsv,${sample_name}.metabat2.tsv --contigs={{output}}/step-2/${sample_name}_noLCG.fa --outputbasename={{output}}/${folder}/${sample_name}/${sample_name} --labels=CONCOCT,MaxBin,MetaBAT --threads={{nprocs}} --search_engine=diamond --dbDirectory=${DAS_db} --write_bins
+dastool_error_handler () {
+    # raise an error if the log doesn't have the expected error
+    if grep -qF "No bins with bin-score >0.5 found" dastool.log; then
+        touch {{output}}/step-5/completed_${SLURM_ARRAY_TASK_ID}.log
+    else
+        cat dastool.log
+        exit 1
+    fi
+}
+
+trap dastool_error_handler ERR
+
+DAS_Tool --bins=${sample_name}.concoct.tsv,${sample_name}.maxbin2.tsv,${sample_name}.metabat2.tsv --contigs={{output}}/step-2/${sample_name}_noLCG.fa --outputbasename={{output}}/${folder}/${sample_name}/${sample_name} --labels=CONCOCT,MaxBin,MetaBAT --threads={{nprocs}} --search_engine=diamond --dbDirectory=${DAS_db} --write_bins > dastool.log 2>&1
 
 touch {{output}}/step-5/completed_${SLURM_ARRAY_TASK_ID}.log
