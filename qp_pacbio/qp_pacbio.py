@@ -704,6 +704,7 @@ def generate_feature_table_scripts(qclient, job_id, out_dir, parameters, url):
         "wall_time_limit": step_resources["wall_time_limit"],
         "mem_in_gb": step_resources["mem_in_gb"],
         "array_params": f"1-{njobs}%{step_resources['max_tasks']}",
+        "percent_identity": parameters["percent-identity"],
     }
     remap_script = _write_slurm(f"{out_dir}/remap", remt, **params)
 
