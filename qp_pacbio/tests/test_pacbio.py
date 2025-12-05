@@ -632,7 +632,7 @@ class PacBioFeatureTableTests(PacBioTests):
             "    biom convert -i ${tsv} -o ${sn_folder}/counts.biom --to-hdf5\n",
             "fi\n",
             "\n",
-            "touch ${out_folder}/completed_${{SLURM_ARRAY_TASK_ID}}.log",
+            "touch ${out_folder}/completed_${SLURM_ARRAY_TASK_ID}.log",
         ]
         self.assertEqual(obs_remap, exp_remap)
 
