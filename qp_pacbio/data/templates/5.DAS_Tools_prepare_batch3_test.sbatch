@@ -46,9 +46,12 @@ Fasta_to_Contig2Bin.sh -i ./metabat2_bins -e fa | awk 'BEGIN{FS=OFS="\t"}{print 
 mkdir {{output}}/${folder}/${sample_name}
 
 dastool_error_handler () {
-    # raise an error if the log doesn't have the expected error
+    # if we see the expected error, ignore it and complete this
+    # worker, otherwise raise an error
     if grep -qF "No bins with bin-score >0.5 found" dastool.log; then
         touch {{output}}/step-5/completed_${SLURM_ARRAY_TASK_ID}.log
+        touch {{output}}/step-6/completed_${SLURM_ARRAY_TASK_ID}.log
+        touch {{output}}/step-7/completed_${SLURM_ARRAY_TASK_ID}.log
     else
         cat dastool.log
         exit 1
