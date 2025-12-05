@@ -511,7 +511,7 @@ class PacBioFeatureTableTests(PacBioTests):
             "#SBATCH -N 1\n",
             "#SBATCH -n 32\n",
             "#SBATCH --time 18000\n",
-            "#SBATCH --mem 50G\n",
+            "#SBATCH --mem 128G\n",
             f"#SBATCH -o {out_dir}/merge/logs/%x-%A.out\n",
             f"#SBATCH -e {out_dir}/merge/logs/%x-%A.err\n",
             "\n",
@@ -572,9 +572,9 @@ class PacBioFeatureTableTests(PacBioTests):
             "ls ${PWD}/dereplicated/* > genomes.txt\n",
             "GToTree -f genomes.txt -o phylogeny -j 32 -H Bacteria -c 0.4 -G 0.4\n",
             "\n",
-            "for f in $(ls {{output}}/*_sample_list.txt); do\n",
-            "    echo $f >> {{output}}/sample_list.txt\n",
-            '    echo "" >> {{output}}/sample_list.txt\n',
+            f"for f in $(ls {out_dir}/*_sample_list.txt); do\n",
+            f"    echo $f >> {out_dir}/sample_list.txt\n",
+            f'    echo "" >> {out_dir}/sample_list.txt\n',
             "done",
         ]
         self.assertEqual(obs_merge, exp_merge)
@@ -632,7 +632,7 @@ class PacBioFeatureTableTests(PacBioTests):
             "    biom convert -i ${tsv} -o ${sn_folder}/counts.biom --to-hdf5\n",
             "fi\n",
             "\n",
-            f"touch {out_dir}/completed_${{SLURM_ARRAY_TASK_ID}}.log",
+            "touch ${out_folder}/completed_${{SLURM_ARRAY_TASK_ID}}.log",
         ]
         self.assertEqual(obs_remap, exp_remap)
 

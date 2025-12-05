@@ -75,7 +75,7 @@ Feature Table from LCG/MAG:
     node_count: 1
     nprocs: 32
     wall_time_limit: 5:00:00
-    mem_in_gb: 50
+    mem_in_gb: 128
   remap:
     node_count: 1
     nprocs: 12
