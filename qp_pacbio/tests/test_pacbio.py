@@ -664,7 +664,7 @@ class PacBioFeatureTableTests(PacBioTests):
             "\n",
             "source ~/.bashrc\n",
             "set -e\n",
-            "source ~/.bash_profile; conda activate qp_pacbio_2025.9\n",
+            f"{CONDA_ENVIRONMENT}\n",
             f"cd {out_dir}/\n",
             "\n",
             f"python -c \"from qp_pacbio.util import client_connect; qclient = client_connect('{url}'); qclient.update_job_step('{job_id}', 'Merging BIOMs')\"\n",
