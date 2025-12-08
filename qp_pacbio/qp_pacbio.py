@@ -645,6 +645,7 @@ def generate_feature_table_scripts(qclient, job_id, out_dir, parameters, url):
         "conda_environment": CONDA_ENVIRONMENT,
         "output": out_dir,
         "qjid": job_id,
+        "url": url,
     }
 
     qclient.update_job_step(
@@ -708,4 +709,15 @@ def generate_feature_table_scripts(qclient, job_id, out_dir, parameters, url):
     }
     remap_script = _write_slurm(f"{out_dir}/remap", remt, **params)
 
-    return merge_script, remap_script
+    remt = JGT("feature_table_finish.sbatch")
+    step_resources = resources["finish"]
+    params = main_parameters | {
+        "job_name": f"f_{job_id}",
+        "node_count": step_resources["node_count"],
+        "nprocs": step_resources["nprocs"],
+        "wall_time_limit": step_resources["wall_time_limit"],
+        "mem_in_gb": step_resources["mem_in_gb"],
+    }
+    remt_script = _write_slurm(f"{out_dir}/finish", remt, **params)
+
+    return merge_script, remap_script, remt_script

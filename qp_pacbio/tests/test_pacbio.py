@@ -495,7 +495,7 @@ class PacBioFeatureTableTests(PacBioTests):
         self._clean_up_files.append(out_dir)
 
         url = "https://test.test.edu/"
-        merge_fp, remap_fp = generate_feature_table_scripts(
+        merge_fp, remap_fp, finish_fp = generate_feature_table_scripts(
             self.qclient, job_id, out_dir, parameters, url
         )
 
@@ -503,6 +503,8 @@ class PacBioFeatureTableTests(PacBioTests):
             obs_merge = [line for line in f.readlines() if not line.startswith("# ")]
         with open(remap_fp, "r") as f:
             obs_remap = [line for line in f.readlines() if not line.startswith("# ")]
+        with open(finish_fp, "r") as f:
+            obs_finish = [line for line in f.readlines() if not line.startswith("# ")]
 
         exp_merge = [
             "#!/bin/bash\n",
@@ -519,6 +521,8 @@ class PacBioFeatureTableTests(PacBioTests):
             "set -e\n",
             f"{CONDA_ENVIRONMENT}\n",
             f"cd {out_dir}/merge\n",
+            "\n",
+            f"python -c \"from qp_pacbio.util import client_connect; qclient = client_connect('{url}'); qclient.update_job_step('{job_id}', 'Merging LCG/MAG files')\"\n",
             "\n",
             "\n",
             "mkdir -p LCG all_fna checkm\n",
@@ -551,10 +555,14 @@ class PacBioFeatureTableTests(PacBioTests):
             "    awk -v aid=${aid}_ 'NR > 1 { print aid $0 }' ${f} >> merged_checkm.txt\n",
             "done\n",
             "\n",
+            f"python -c \"from qp_pacbio.util import client_connect; qclient = client_connect('{url}'); qclient.update_job_step('{job_id}', 'Running checkm')\"\n",
+            "\n",
             "checkm lineage_wf LCG LCG_checkm -x fna -t 32 --tab_table -f LCG_checkm.txt --pplacer_threads 1\n",
             "awk FNR!=1 LCG_checkm.txt >> merged_checkm.txt;\n",
             "\n",
             "mv LCG/*.fna all_fna/\n",
+            "\n",
+            f"python -c \"from qp_pacbio.util import client_connect; qclient = client_connect('{url}'); qclient.update_job_step('{job_id}', 'Running galah')\"\n",
             "\n",
             "galah cluster --checkm-tab-table merged_checkm.txt --genome-fasta-directory all_fna \\\n",
             "    -x fna --min-completeness 50 --max-contamination 10 --quality-formula dRep \\\n",
@@ -564,10 +572,14 @@ class PacBioFeatureTableTests(PacBioTests):
             "    --ani 0.995 \\\n",
             "    --precluster-method finch\n",
             "\n",
+            f"python -c \"from qp_pacbio.util import client_connect; qclient = client_connect('{url}'); qclient.update_job_step('{job_id}', 'Running gtdbtk')\"\n",
+            "\n",
             'export GTDBTK_DATA_PATH="/scratch/qp-pacbio/gtdbtk_v226_db/"\n',
             "gtdbtk classify_wf --genome_dir dereplicated \\\n",
             "    --out_dir dereplicated_gtdbtk --cpus 32 \\\n",
             "    --pplacer_cpus 6 -x fna --skip_ani_screen\n",
+            "\n",
+            f"python -c \"from qp_pacbio.util import client_connect; qclient = client_connect('{url}'); qclient.update_job_step('{job_id}', 'Running GToTree')\"\n",
             "\n",
             "ls ${PWD}/dereplicated/* > genomes.txt\n",
             "GToTree -f genomes.txt -o phylogeny -j 32 -H Bacteria -c 0.4 -G 0.4\n",
@@ -575,8 +587,11 @@ class PacBioFeatureTableTests(PacBioTests):
             f"for f in $(ls {out_dir}/*_sample_list.txt); do\n",
             f"    echo $f >> {out_dir}/sample_list.txt\n",
             f'    echo "" >> {out_dir}/sample_list.txt\n',
-            "done",
+            "done\n",
+            "\n",
+            f"python -c \"from qp_pacbio.util import client_connect; qclient = client_connect('{url}'); qclient.update_job_step('{job_id}', 'Remapping')\"",
         ]
+
         self.assertEqual(obs_merge, exp_merge)
 
         # checking the expected files and number of lines
@@ -635,6 +650,30 @@ class PacBioFeatureTableTests(PacBioTests):
             "touch ${out_folder}/completed_${SLURM_ARRAY_TASK_ID}.log",
         ]
         self.assertEqual(obs_remap, exp_remap)
+
+        exp_finish = [
+            "#!/bin/bash\n",
+            f"#SBATCH -J f_{job_id}\n",
+            "#SBATCH -p qiita\n",
+            "#SBATCH -N 1\n",
+            "#SBATCH -n 1\n",
+            "#SBATCH --time 14400\n",
+            "#SBATCH --mem 4G\n",
+            f"#SBATCH -o {out_dir}/finish/logs/%x-%A_%a.out\n",
+            f"#SBATCH -e {out_dir}/finish/logs/%x-%A_%a.err\n",
+            "\n",
+            "source ~/.bashrc\n",
+            "set -e\n",
+            "source ~/.bash_profile; conda activate qp_pacbio_2025.9\n",
+            f"cd {out_dir}/\n",
+            "\n",
+            f"python -c \"from qp_pacbio.util import client_connect; qclient = client_connect('{url}'); qclient.update_job_step('{job_id}', 'Merging BIOMs')\"\n",
+            "\n",
+            f"biom_merge_pacbio --base {out_dir}/finish --merge-type counts\n",
+            "\n",
+            f"finish_qp_pacbio {url} {job_id} {out_dir}",
+        ]
+        self.assertEqual(obs_finish, exp_finish)
 
 
 if __name__ == "__main__":

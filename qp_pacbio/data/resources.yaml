@@ -82,3 +82,8 @@ Feature Table from LCG/MAG:
     wall_time_limit: 2:00:00
     mem_in_gb: 50
     max_tasks: 8
+  finish:
+    node_count: 1
+    nprocs: 1
+    wall_time_limit: 4:00:00
+    mem_in_gb: 4

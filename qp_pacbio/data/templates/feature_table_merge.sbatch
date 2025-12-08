@@ -13,6 +13,8 @@ set -e
 {{conda_environment}}
 cd {{output}}/merge
 
+python -c "from qp_pacbio.util import client_connect; qclient = client_connect('{{url}}'); qclient.update_job_step('{{qjid}}', 'Merging LCG/MAG files')"
+
 # The expected files here are:
 # {aid}_prep_info_artifact.tsv : preparation for each artifact
 # {aid}_folders.tsv : LCG/MAG folders to check for eaach artifact
@@ -50,10 +52,14 @@ for f in $(ls checkm/*.txt); do
     awk -v aid=${aid}_ 'NR > 1 { print aid $0 }' ${f} >> merged_checkm.txt
 done
 
+python -c "from qp_pacbio.util import client_connect; qclient = client_connect('{{url}}'); qclient.update_job_step('{{qjid}}', 'Running checkm')"
+
 checkm lineage_wf LCG LCG_checkm -x fna -t {{nprocs}} --tab_table -f LCG_checkm.txt --pplacer_threads 1
 awk FNR!=1 LCG_checkm.txt >> merged_checkm.txt;
 
 mv LCG/*.fna all_fna/
+
+python -c "from qp_pacbio.util import client_connect; qclient = client_connect('{{url}}'); qclient.update_job_step('{{qjid}}', 'Running galah')"
 
 galah cluster --checkm-tab-table merged_checkm.txt --genome-fasta-directory all_fna \
     -x fna --min-completeness 50 --max-contamination 10 --quality-formula dRep \
@@ -63,12 +69,16 @@ galah cluster --checkm-tab-table merged_checkm.txt --genome-fasta-directory all_
     --ani {{percent_identity}} \
     --precluster-method finch
 
+python -c "from qp_pacbio.util import client_connect; qclient = client_connect('{{url}}'); qclient.update_job_step('{{qjid}}', 'Running gtdbtk')"
+
 # note that we are limiting pplacer_cpus to 6 to reduce the
 # memory requirements
 export GTDBTK_DATA_PATH="/scratch/qp-pacbio/gtdbtk_v226_db/"
 gtdbtk classify_wf --genome_dir dereplicated \
     --out_dir dereplicated_gtdbtk --cpus {{nprocs}} \
     --pplacer_cpus 6 -x fna --skip_ani_screen
+
+python -c "from qp_pacbio.util import client_connect; qclient = client_connect('{{url}}'); qclient.update_job_step('{{qjid}}', 'Running GToTree')"
 
 ls ${PWD}/dereplicated/* > genomes.txt
 GToTree -f genomes.txt -o phylogeny -j {{nprocs}} -H Bacteria -c {{GToTree_c}} -G {{GToTree_G}}
@@ -77,3 +87,5 @@ for f in $(ls {{output}}/*_sample_list.txt); do
     echo $f >> {{output}}/sample_list.txt
     echo "" >> {{output}}/sample_list.txt
 done
+
+python -c "from qp_pacbio.util import client_connect; qclient = client_connect('{{url}}'); qclient.update_job_step('{{qjid}}', 'Remapping')"

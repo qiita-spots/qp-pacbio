@@ -61,7 +61,6 @@ def execute(url, job_id, output_dir):
         regular_commands = {
             "Woltka v0.1.7, minimap2": generate_minimap2_processing,
             "Remove SynDNA plasmid, insert, & GCF_000184185 reads (minimap2)": generate_syndna_processing,
-            "Feature Table from LCG/MAG": generate_feature_table_scripts,
         }
 
         if command in regular_commands.keys():
@@ -77,6 +76,20 @@ def execute(url, job_id, output_dir):
             second_job_id = second_job.stdout.decode("utf8").split()[-1]
             print(f"{first_job_id}, {second_job_id}")
             qclient.update_job_step(job_id, "Step 2 of 4: Aligning sequences")
+        elif command == "Feature Table from LCG/MAG":
+            qclient.update_job_step(job_id, "Generating commands")
+            first_fp, second_fp, third_fp = generate_feature_table_scripts(
+                qclient, job_id, output_dir, parameters, url
+            )
+            first_job = run(["sbatch", first_fp], stdout=PIPE)
+            first_job_id = first_job.stdout.decode("utf8").split()[-1]
+            cmd = ["sbatch", "-d", f"afterok:{first_job_id}", second_fp]
+            second_job = run(cmd, stdout=PIPE)
+            second_job_id = second_job.stdout.decode("utf8").split()[-1]
+            cmd = ["sbatch", "-d", f"afterok:{second_job_id}", third_fp]
+            third_job = run(cmd, stdout=PIPE)
+            third_job_id = third_job.stdout.decode("utf8").split()[-1]
+            print(f"{first_job_id}, {second_job_id}, {third_job_id}")
         elif command == "PacBio processing":
             frp = join(output_dir, "results")
             makedirs(frp, exist_ok=True)
@@ -166,8 +179,8 @@ def _biom_merge(tables):
 def biom_merge(base, merge_type):
     """Merges all PacBio biom tables"""
     merge_type = merge_type.lower()
-    if merge_type == "syndna":
-        ranks = ["syndna"]
+    if merge_type in ("syndna", "counts"):
+        ranks = [merge_type]
     elif merge_type == "woltka":
         ranks = ["none", "per-gene", "ko", "ec", "pathway"]
     else:
