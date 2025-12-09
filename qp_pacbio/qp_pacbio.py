@@ -461,7 +461,9 @@ def syndna_processing(qclient, job_id, parameters, out_dir):
     if exists(fp_biom):  # and exists(fp_alng):
         # if we got to this point a preparation file should exist in
         # the output folder
-        prep = pd.read_csv(f"{out_dir}/prep_info.tsv", index_col=None, sep="\t")
+        prep = pd.read_csv(
+            f"{out_dir}/prep_info.tsv", index_col=None, sep="\t", dtype=str
+        )
         output = fit_linear_regression_models_for_qiita(
             prep, load_table(fp_biom), int(parameters["min_sample_counts"])
         )
