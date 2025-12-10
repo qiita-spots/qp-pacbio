@@ -71,12 +71,12 @@ galah cluster --checkm-tab-table merged_checkm.txt --genome-fasta-directory all_
 
 python -c "from qp_pacbio.util import client_connect; qclient = client_connect('{{url}}'); qclient.update_job_step('{{qjid}}', 'Running gtdbtk')"
 
-# note that we are limiting pplacer_cpus to 6 to reduce the
+# note that we are limiting pplacer_cpus to 3 to reduce the
 # memory requirements
 export GTDBTK_DATA_PATH="/scratch/qp-pacbio/gtdbtk_v226_db/"
 gtdbtk classify_wf --genome_dir dereplicated \
     --out_dir dereplicated_gtdbtk --cpus {{nprocs}} \
-    --pplacer_cpus 6 -x fna --skip_ani_screen
+    --pplacer_cpus 3 -x fna --skip_ani_screen
 
 python -c "from qp_pacbio.util import client_connect; qclient = client_connect('{{url}}'); qclient.update_job_step('{{qjid}}', 'Running GToTree')"
 
