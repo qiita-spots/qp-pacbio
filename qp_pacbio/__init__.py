@@ -97,10 +97,10 @@ plugin.register_command(pacbio_processing_cmd)
 #
 
 req_params = {
-    "analysis": ("integer", None),
-    "artifact": ("artifact", ["job-output-folder"]),
+    "analysis": ("integer", "None"),
 }
 opt_params = {
+    "artifacts": ("mchoice:[]", "[]"),
     "percent-identity": ("float", "0.995"),
     "GToTree-c": ("float", "0.4"),
     "GToTree-G": ("float", "0.4"),

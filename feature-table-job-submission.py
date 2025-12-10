@@ -41,7 +41,7 @@ def main(aid, user_email, command_id):
     job = ProcessingJob.create(user, job_params, True)
     job.submit()
 
-    print(f"{job.id} created.")
+    print(f"{job.id} created for Analysis {analysis.id}.")
 
 
 if __name__ == "__main__":
