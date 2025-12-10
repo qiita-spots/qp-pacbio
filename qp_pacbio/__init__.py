@@ -97,6 +97,7 @@ plugin.register_command(pacbio_processing_cmd)
 #
 
 req_params = {
+    "analysis": ("integer", None),
     "artifact": ("artifact", ["job-output-folder"]),
 }
 opt_params = {

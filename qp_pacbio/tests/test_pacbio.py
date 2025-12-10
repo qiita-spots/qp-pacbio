@@ -480,7 +480,8 @@ class PacBioFeatureTableTests(PacBioTests):
                 ]
             ),
             "status": "running",
-            "parameters": dumps({"artifact": aids}),
+            # 2 is an existing analysis in the Qiita development database
+            "parameters": dumps({"analysis": 2, "artifact": aids}),
         }
         job_id = self.qclient.post("/apitest/processing_job/", data=data)["job"]
 
