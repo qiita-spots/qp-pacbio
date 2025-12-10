@@ -655,7 +655,7 @@ def generate_feature_table_scripts(qclient, job_id, out_dir, parameters, url):
     )
 
     njobs = 0
-    for aid in parameters["artifact"]:
+    for aid in parameters["artifacts"]:
         # for each artifact we want to get their files, preps and parents file data
         files, prep = qclient.artifact_and_preparation_files(aid)
         prep_fp = join(out_dir, f"{aid}_prep_info_artifact.tsv")
