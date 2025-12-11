@@ -204,10 +204,10 @@ class PacWoltkaProfilingTests(PacBioTests):
             "       --secondary=no --MD --eqx ${db} \\\n",
             "       ${filename} | \\\n",
             '   awk \'BEGIN { FS=OFS="\\t" } /^@/ { print; next } '
-            '{ $10="*"; $11="*" } 1\' | grep -v "^@" | sort -k 1 | \\\n',
+            '{ $10="*"; $11="*" } 1\' | sort -k 1 | \\\n',
             f"   xz -1 -T1 > {out_dir}/alignment/${{sample_name}}.sam.xz\n",
             "\n",
-            f"xcat {out_dir}/alignment/${{sample_name}}.sam.xz | \\\n",
+            f"xzcat {out_dir}/alignment/${{sample_name}}.sam.xz | \\\n",
             f"    /home/mcdonadt/duckdb-miint/duckdb-2025.11.20 -f {BASEPATH}/data/sql//qcov-seqident-filter.sql > {out_dir}/filtered-alignment/${{sample_name}}.sam.gz",
         ]
         self.assertEqual(obs_main, exp_main)

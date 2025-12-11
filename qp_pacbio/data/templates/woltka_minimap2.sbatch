@@ -27,8 +27,8 @@ fn=`basename ${filename}`
 minimap2 -x map-hifi -t {{nprocs}} -a \
        --secondary=no --MD --eqx ${db} \
        ${filename} | \
-   awk 'BEGIN { FS=OFS="\t" } /^@/ { print; next } { $10="*"; $11="*" } 1' | grep -v "^@" | sort -k 1 | \
+   awk 'BEGIN { FS=OFS="\t" } /^@/ { print; next } { $10="*"; $11="*" } 1' | sort -k 1 | \
    xz -1 -T1 > {{output}}/alignment/${sample_name}.sam.xz
 
-xcat {{output}}/alignment/${sample_name}.sam.xz | \
+xzcat {{output}}/alignment/${sample_name}.sam.xz | \
     /home/mcdonadt/duckdb-miint/duckdb-2025.11.20 -f {{sql_home}}/qcov-seqident-filter.sql > {{output}}/filtered-alignment/${sample_name}.sam.gz
