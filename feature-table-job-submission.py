@@ -35,7 +35,7 @@ def main(aid, user_email, command_id):
 
     params = {
         "analysis": analysis.id,
-        "artifact": [a for a in aid],
+        "artifacts": [a for a in aid],
     }
     job_params = Parameters.load(command, values_dict=params)
     job = ProcessingJob.create(user, job_params, True)

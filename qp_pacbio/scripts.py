@@ -56,7 +56,6 @@ def execute(url, job_id, output_dir):
         job_info = qclient.get_job_info(job_id)
         parameters = job_info["parameters"]
         command = job_info["command"]
-        artifact_id = parameters["artifact"]
 
         regular_commands = {
             "Woltka v0.1.7, minimap2": generate_minimap2_processing,
@@ -64,6 +63,7 @@ def execute(url, job_id, output_dir):
         }
 
         if command in regular_commands.keys():
+            artifact_id = parameters["artifact"]
             first_fp, second_fp = regular_commands[command](
                 qclient, job_id, output_dir, parameters, url
             )
@@ -77,6 +77,7 @@ def execute(url, job_id, output_dir):
             print(f"{first_job_id}, {second_job_id}")
             qclient.update_job_step(job_id, "Step 2 of 4: Aligning sequences")
         elif command == "Feature Table from LCG/MAG":
+            artifact_id = parameters["artifacts"]
             qclient.update_job_step(job_id, "Generating commands")
             first_fp, second_fp, third_fp = generate_feature_table_scripts(
                 qclient, job_id, output_dir, parameters, url
@@ -91,6 +92,7 @@ def execute(url, job_id, output_dir):
             third_job_id = third_job.stdout.decode("utf8").split()[-1]
             print(f"{first_job_id}, {second_job_id}, {third_job_id}")
         elif command == "PacBio processing":
+            artifact_id = parameters["artifact"]
             frp = join(output_dir, "results")
             makedirs(frp, exist_ok=True)
 
