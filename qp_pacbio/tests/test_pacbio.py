@@ -208,7 +208,7 @@ class PacWoltkaProfilingTests(PacBioTests):
             f"   xz -1 -T1 > {out_dir}/alignment/${{sample_name}}.sam.xz\n",
             "\n",
             f"xzcat {out_dir}/alignment/${{sample_name}}.sam.xz | \\\n",
-            f"    /home/mcdonadt/duckdb-miint/duckdb-2025.11.20 -f {BASEPATH}/data/sql//qcov-seqident-filter.sql > {out_dir}/filtered-alignment/${{sample_name}}.sam.gz",
+            f"    /home/mcdonadt/duckdb-miint/duckdb-2025.12.11 -f {BASEPATH}/data/sql//qcov-seqident-filter.sql > {out_dir}/filtered-alignment/${{sample_name}}.sam.gz",
         ]
         self.assertEqual(obs_main, exp_main)
 
