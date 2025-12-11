@@ -46,7 +46,7 @@ PacBio processing:
     nprocs: 1
     wall_time_limit: 00:10:00
     mem_in_gb: 10
-Woltka v0.1.7, minimap2:
+Woltka v0.1.7 with cov and id filter:
   minimap2:
     node_count: 1
     nprocs: 16

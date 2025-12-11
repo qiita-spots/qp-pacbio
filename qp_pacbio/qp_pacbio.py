@@ -24,7 +24,8 @@ from .util import KISSLoader, find_base_path
 
 JENV = Environment(loader=KISSLoader("data/templates"))
 JGT = JENV.get_template
-RESOURCES = yaml.safe_load(open(join(find_base_path(), "data/resources.yaml")))
+BASEPATH = find_base_path()
+RESOURCES = yaml.safe_load(open(join(BASEPATH, "data/resources.yaml")))
 CONDA_ENVIRONMENT = environ["ENVIRONMENT"]
 PACBIO_PROCESSING_STEPS = 7
 
@@ -386,11 +387,12 @@ def generate_minimap2_processing(qclient, job_id, out_dir, parameters, url):
     str, str
         Returns the two filepaths of the slurm scripts
     """
-    resources = RESOURCES["Woltka v0.1.7, minimap2"]
+    resources = RESOURCES["Woltka v0.1.7 with cov and id filter"]
     main_parameters = {
         "conda_environment": CONDA_ENVIRONMENT,
         "output": out_dir,
         "qjid": job_id,
+        "sql_home": join(BASEPATH, "data/sql/"),
     }
 
     qclient.update_job_step(
