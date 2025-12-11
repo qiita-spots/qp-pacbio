@@ -19,7 +19,7 @@ functional_dir=/scratch/qp-woltka/WoLr2/function/kegg/
 
 mkdir -p {{output}}/coverages/
 
-for f in `ls alignment/*.sam.xz`; do
+for f in `ls filtered-alignment/*.sam.xz`; do
     sn=`basename ${f/.sam.xz/}`;
     of={{output}}/bioms/${sn};
     mkdir -p ${of};

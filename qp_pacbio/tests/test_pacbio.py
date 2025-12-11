@@ -17,6 +17,7 @@ from qiita_client.testing import PluginTestCase
 
 from qp_pacbio import plugin
 from qp_pacbio.qp_pacbio import (
+    BASEPATH,
     CONDA_ENVIRONMENT,
     generate_minimap2_processing,
     generate_sample_list,
@@ -187,7 +188,7 @@ class PacWoltkaProfilingTests(PacBioTests):
             "source ~/.bashrc\n",
             "set -e\n",
             f"{CONDA_ENVIRONMENT}\n",
-            f"mkdir -p {out_dir}/alignment\n",
+            f"mkdir -p {out_dir}/alignment {out_dir}/filtered-alignment\n",
             f"cd {out_dir}/\n",
             "db=/scratch/qp-pacbio/minimap2/WoLr2/WoLr2.map-hifi.mmi\n",
             "\n",
@@ -204,7 +205,10 @@ class PacWoltkaProfilingTests(PacBioTests):
             "       ${filename} | \\\n",
             '   awk \'BEGIN { FS=OFS="\\t" } /^@/ { print; next } '
             '{ $10="*"; $11="*" } 1\' | grep -v "^@" | sort -k 1 | \\\n',
-            f"   xz -1 -T1 > {out_dir}/alignment/${{sample_name}}.sam.xz",
+            f"   xz -1 -T1 > {out_dir}/alignment/${{sample_name}}.sam.xz\n",
+            "\n",
+            f"xcat {out_dir}/alignment/${{sample_name}}.sam.xz | \\\n",
+            f"    /home/mcdonadt/duckdb-miint/duckdb-2025.11.20 -f {BASEPATH}/data/sql//qcov-seqident-filter.sql > {out_dir}/filtered-alignment/${{sample_name}}.sam.gz",
         ]
         self.assertEqual(obs_main, exp_main)
 
@@ -231,7 +235,7 @@ class PacWoltkaProfilingTests(PacBioTests):
             "\n",
             f"mkdir -p {out_dir}/coverages/\n",
             "\n",
-            "for f in `ls alignment/*.sam.xz`; do\n",
+            "for f in `ls filtered-alignment/*.sam.xz`; do\n",
             "    sn=`basename ${f/.sam.xz/}`;\n",
             f"    of={out_dir}/bioms/${{sn}};\n",
             "    mkdir -p ${of};\n",
