@@ -387,7 +387,7 @@ def generate_minimap2_processing(qclient, job_id, out_dir, parameters, url):
     str, str
         Returns the two filepaths of the slurm scripts
     """
-    resources = RESOURCES["Woltka v0.1.7, minimap2"]
+    resources = RESOURCES["Woltka v0.1.7 with cov and id filter"]
     main_parameters = {
         "conda_environment": CONDA_ENVIRONMENT,
         "output": out_dir,

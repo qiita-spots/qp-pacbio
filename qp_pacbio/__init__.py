@@ -33,7 +33,7 @@ outputs = {
 }
 dflt_param_set = {"WoLr2": {"Database": "WoLr2"}}
 minimap2_cmd = QiitaCommand(
-    "Woltka v0.1.7, minimap2",
+    "Woltka v0.1.7 with cov and id filter",
     "Functional and Taxonomic Predictions",
     minimap2_processing,
     req_params,
