@@ -84,7 +84,7 @@ ls ${PWD}/dereplicated/* > genomes.txt
 GToTree -f genomes.txt -o phylogeny -j {{nprocs}} -H Bacteria -c {{GToTree_c}} -G {{GToTree_G}}
 
 for f in $(ls {{output}}/*_sample_list.txt); do
-    echo $f >> {{output}}/sample_list.txt
+    cat $f >> {{output}}/sample_list.txt
     echo "" >> {{output}}/sample_list.txt
 done
 

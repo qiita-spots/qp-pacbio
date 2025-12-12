@@ -586,7 +586,7 @@ class PacBioFeatureTableTests(PacBioTests):
             "GToTree -f genomes.txt -o phylogeny -j 32 -H Bacteria -c 0.4 -G 0.4\n",
             "\n",
             f"for f in $(ls {out_dir}/*_sample_list.txt); do\n",
-            f"    echo $f >> {out_dir}/sample_list.txt\n",
+            f"    cat $f >> {out_dir}/sample_list.txt\n",
             f'    echo "" >> {out_dir}/sample_list.txt\n',
             "done\n",
             "\n",
@@ -670,7 +670,7 @@ class PacBioFeatureTableTests(PacBioTests):
             "\n",
             f"python -c \"from qp_pacbio.util import client_connect; qclient = client_connect('{url}'); qclient.update_job_step('{job_id}', 'Merging BIOMs')\"\n",
             "\n",
-            f"biom_merge_pacbio --base {out_dir}/finish --merge-type counts\n",
+            f"biom_merge_pacbio --base {out_dir}/remap --merge-type counts\n",
             "\n",
             f"finish_qp_pacbio {url} {job_id} {out_dir}",
         ]

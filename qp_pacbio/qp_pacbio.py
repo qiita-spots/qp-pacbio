@@ -6,7 +6,7 @@
 # The full license is in the file LICENSE, distributed with this software.
 # -----------------------------------------------------------------------------
 from glob import glob
-from os import environ, makedirs, mkdir
+from os import environ, makedirs, mkdir, rename
 from os.path import basename, exists, join
 from shutil import copy2
 from subprocess import run
@@ -617,6 +617,39 @@ def feature_table_generation(qclient, job_id, parameters, out_dir):
     qclient.update_job_step(job_id, "Commands finished")
     ainfo = []
     errors = []
+
+    required_files = {
+        "biom": f"{out_dir}/remap/counts.biom",
+        "tree": f"{out_dir}/merge/phylogeny/phylogeny.tre",
+        "tax": f"{out_dir}/merge/dereplicated_gtdbtk/gtdbtk.bac120.summary.tsv",
+    }
+    optional_files = [f"{out_dir}/merge/dereplicated_gtdbtk/gtdbtk.ar53.summary.tsv"]
+
+    for f in required_files.values():
+        if not exists(f):
+            errors.append(f"{f} does not exits.")
+
+    if errors:
+        errors.append("Please contact qiita.help@gmail.com for more information")
+    else:
+        folder = join(out_dir, "finish", "files")
+        makedirs(folder)
+
+        for f in [required_files["tax"]] + optional_files:
+            if exists(f):
+                rename(f, join(folder, basename(f)))
+
+        ainfo = [
+            ArtifactInfo(
+                "Merged LCG/MAG feature table",
+                "BIOM",
+                [
+                    (required_files["biom"], "biom"),
+                    (required_files["tree"], "plain_text"),
+                    (folder, "directory"),
+                ],
+            )
+        ]
 
     return True, ainfo, "".join(errors)
 
