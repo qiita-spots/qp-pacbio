@@ -621,9 +621,11 @@ def feature_table_generation(qclient, job_id, parameters, out_dir):
     required_files = {
         "biom": f"{out_dir}/remap/counts.biom",
         "tree": f"{out_dir}/merge/phylogeny/phylogeny.tre",
-        "tax": f"{out_dir}/merge/dereplicated_gtdbtk/gtdbtk.bac120.summary.tsv",
+        "tax": f"{out_dir}/merge/dereplicated_gtdbtk/classify/gtdbtk.bac120.summary.tsv",
     }
-    optional_files = [f"{out_dir}/merge/dereplicated_gtdbtk/gtdbtk.ar53.summary.tsv"]
+    optional_files = [
+        f"{out_dir}/merge/dereplicated_gtdbtk/classify/gtdbtk.ar53.summary.tsv"
+    ]
 
     for f in required_files.values():
         if not exists(f):
