@@ -31,4 +31,4 @@ minimap2 -x map-hifi -t {{nprocs}} -a \
    xz -1 -T1 > {{output}}/alignment/${sample_name}.sam.xz
 
 xzcat {{output}}/alignment/${sample_name}.sam.xz | \
-    /home/mcdonadt/duckdb-miint/duckdb-2025.12.11 -f {{sql_home}}/qcov-seqident-filter.sql > {{output}}/filtered-alignment/${sample_name}.sam.gz
+    /home/mcdonadt/duckdb-miint/duckdb-2025.12.12 -f {{sql_home}}/qcov-seqident-filter.sql > {{output}}/filtered-alignment/${sample_name}.sam.gz
