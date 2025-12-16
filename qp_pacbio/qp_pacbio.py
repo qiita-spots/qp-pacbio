@@ -622,6 +622,7 @@ def feature_table_generation(qclient, job_id, parameters, out_dir):
         "biom": f"{out_dir}/remap/counts.biom",
         "tree": f"{out_dir}/merge/phylogeny/phylogeny.tre",
         "tax": f"{out_dir}/merge/dereplicated_gtdbtk/classify/gtdbtk.bac120.summary.tsv",
+        "checkm": f"{out_dir}/merge/merged_checkm.txt",
     }
     optional_files = [
         f"{out_dir}/merge/dereplicated_gtdbtk/classify/gtdbtk.ar53.summary.tsv"
@@ -637,7 +638,7 @@ def feature_table_generation(qclient, job_id, parameters, out_dir):
         folder = join(out_dir, "finish", "files")
         makedirs(folder)
 
-        for f in [required_files["tax"]] + optional_files:
+        for f in [required_files["tax"], required_files["checkm"]] + optional_files:
             if exists(f):
                 rename(f, join(folder, basename(f)))
 
