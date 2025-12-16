@@ -11,6 +11,7 @@ from os.path import basename, exists, join
 from shutil import copy2
 from subprocess import run
 
+import h5py
 import pandas as pd
 import yaml
 from biom import load_table
@@ -19,6 +20,7 @@ from pysyndna import (
     fit_linear_regression_models_for_qiita,
 )
 from qiita_client import ArtifactInfo
+from skbio.tree import TreeNode
 
 from .util import KISSLoader, find_base_path
 
@@ -641,6 +643,21 @@ def feature_table_generation(qclient, job_id, parameters, out_dir):
         for f in [required_files["tax"], required_files["checkm"]] + optional_files:
             if exists(f):
                 rename(f, join(folder, basename(f)))
+
+        # filtering missing features from tree
+        tips = [
+            n.name.replace(" ", "_")
+            for n in TreeNode.read(required_files["tree"]).tips()
+        ]
+        biom = load_table(required_files["biom"])
+        biom_filter = biom.filter(ids_to_keep=tips, axis="observation", inplace=False)
+
+        if biom.shape != biom_filter.shape:
+            with h5py.File(required_files["biom"], "w") as out:
+                biom_filter.to_hdf5(out, "fast-merge")
+            removed = set(biom.ids("observation")) - set(tips)
+            with open(f"{folder}/filtered-features.txt", "w") as fp:
+                fp.write("\n".join(removed))
 
         ainfo = [
             ArtifactInfo(
