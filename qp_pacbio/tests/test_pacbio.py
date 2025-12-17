@@ -589,7 +589,7 @@ class PacBioFeatureTableTests(PacBioTests):
             f"for f in $(ls {out_dir}/*_sample_list.txt); do\n",
             "    fn=$(basename $f)\n",
             "    aid=${fn%%_*}\n",
-            f'    sed "s/$/\t${{aid}}/" ${{f}} >> {out_dir}/sample_list.txt\n',
+            f'    sed "s/$/\\t${{aid}}/" ${{f}} >> {out_dir}/sample_list.txt\n',
             f'    echo "" >> {out_dir}/sample_list.txt\n',
             "done\n",
             "\n",
