@@ -15,7 +15,7 @@ set -e
 out_folder={{output}}/syndna
 mkdir -p ${out_folder}
 cd ${out_folder}
-db_folder=/scratch/qp-pacbio/minimap2/syndna/
+db_folder=/scratch/qp-pacbio/syndna/
 
 step=${SLURM_ARRAY_TASK_ID}
 input=$(head -n $step {{output}}/sample_list.txt | tail -n 1)
