@@ -54,10 +54,11 @@ done
 
 python -c "from qp_pacbio.util import client_connect; qclient = client_connect('{{url}}'); qclient.update_job_step('{{qjid}}', 'Running checkm')"
 
-checkm lineage_wf LCG LCG_checkm -x fna -t {{nprocs}} --tab_table -f LCG_checkm.txt --pplacer_threads 1
-awk FNR!=1 LCG_checkm.txt >> merged_checkm.txt;
-
-mv LCG/*.fna all_fna/
+if [ -n "$(ls -A "LCG")" ]; then
+    checkm lineage_wf LCG LCG_checkm -x fna -t {{nprocs}} --tab_table -f LCG_checkm.txt --pplacer_threads 1
+    awk FNR!=1 LCG_checkm.txt >> merged_checkm.txt;
+    mv LCG/*.fna all_fna/
+fi
 
 python -c "from qp_pacbio.util import client_connect; qclient = client_connect('{{url}}'); qclient.update_job_step('{{qjid}}', 'Running galah')"
 
