@@ -17,10 +17,11 @@ step=${SLURM_ARRAY_TASK_ID}
 input=$(head -n $step {{output}}/sample_list.txt | tail -n 1)
 sample_name=`echo $input | awk '{print $1}'`
 filename=`echo $input | awk '{print $2}'`
+aid=`echo $input | awk '{print $3}'`
 fn=`basename ${filename}`
 
 out_folder={{output}}/remap
-sn_folder=${out_folder}/bioms/${sample_name}
+sn_folder=${out_folder}/bioms/${aid}_${sample_name}
 export TMPDIR=${out_folder}/tmp
 mkdir -p ${TMPDIR} ${sn_folder}
 
