@@ -24,8 +24,6 @@ fout=${out_folder}/lima/${fn/.fastq.gz/}
 final=${out_folder}/final/${fn/.fastq.gz/}
 
 lima_error_handler () {
-    # if we see the expected error, ignore it and complete this
-    # worker, otherwise raise an error
     if grep -qF "Could not find matching barcodes" ${fout}.lima.log; then
         touch {{output}}/completed_${SLURM_ARRAY_TASK_ID}.log
         cp "${fout}.fastq.gz" "${final}.fastq.gz"

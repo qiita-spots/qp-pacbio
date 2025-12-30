@@ -636,12 +636,16 @@ def pacbio_apdater_removal(qclient, job_id, parameters, out_dir):
 
     fp_seqs = f"{out_dir}/processing/final"
     reads = []
-    for f in glob(f"{fp_seqs}/*.fastq"):
+    for f in glob(f"{fp_seqs}/*.fastq*"):
         reads.append((f, "raw_forward_seqs"))
 
     if not reads or len(reads) != samples:
         errors.append(
-            f"Missing {len(reads) - samples} read files. Please contact the admin. "
+            f"Missing {len(reads) - samples} read files. Please contact the admin."
+        )
+    elif len([r for r in reads if r.endswith("fastq.gz")]) == samples:
+        errors.append(
+            "None of the files have the adaptor; if this is mistake contact the admins."
         )
 
     if not errors:
