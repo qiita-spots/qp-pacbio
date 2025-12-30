@@ -668,7 +668,7 @@ def generate_pacbio_apdater_removal(qclient, job_id, out_dir, parameters, url):
     str, str
         Returns the two filepaths of the slurm scripts
     """
-    resources = RESOURCES["PacBio adapter removal"]
+    resources = RESOURCES["PacBio adapter removal via lima/pbmarkdup"]
     main_parameters = {
         "conda_environment": CONDA_ENVIRONMENT,
         "output": out_dir,

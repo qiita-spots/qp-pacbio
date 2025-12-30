@@ -101,7 +101,7 @@ req_params = {
 }
 opt_params = {
     "adapter": ("string", "AAGCAGTGGTATCAACGCAGAGTACT"),
-    "ccs": ("boolean", "False"),
+    "css": ("boolean", "False"),
     "min-score": ("integer", "0"),
     "min-end-score": ("integer", "0"),
     "min-ref-span": ("float", "0.5"),
@@ -116,7 +116,7 @@ outputs = {
 dflt_param_set = {
     "PacBio adapter": {
         "adapter": "AAGCAGTGGTATCAACGCAGAGTACT",
-        "ccs": False,
+        "css": False,
         "min-score": 0,
         "min-end-score": 0,
         "min-ref-span": 0.5,
@@ -128,7 +128,7 @@ dflt_param_set = {
 }
 
 pacbio_apdater_removal_cmd = QiitaCommand(
-    "PacBio adapter removal",
+    "PacBio adapter removal via lima/pbmarkdup",
     "Remove adapter reads using lima/pbmarkdup",
     pacbio_apdater_removal,
     req_params,
