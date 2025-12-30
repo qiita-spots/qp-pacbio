@@ -450,7 +450,7 @@ class PacAdapterRmTests(PacBioTests):
             'counts=$(cut -f "${column}" "${fout}.lima.counts" | tail -n 1)\n',
             "\n",
             'if [[ "$counts" -gt "0" ]]; then\n',
-            '    pbmarkdup "${fout}.fastq.gz" "${final}/${fn}.fastq.gz"\n',
+            '    pbmarkdup "${fout}.fastq.gz" "${final}.fastq.gz"\n',
             "else\n",
             '    cp "${fout}.fastq.gz" "${final}.fastq.gz"\n',
             "fi\n",
