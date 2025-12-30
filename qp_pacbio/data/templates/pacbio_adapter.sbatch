@@ -23,17 +23,30 @@ fn=`basename ${filename}`
 fout=${out_folder}/lima/${fn/.fastq.gz/}
 final=${out_folder}/final/${fn/.fastq.gz/}
 
-{{lima_cmd}}
+lima_error_handler () {
+    # if we see the expected error, ignore it and complete this
+    # worker, otherwise raise an error
+    if grep -qF "Could not find matching barcodes" ${fout}.lima.log; then
+        touch {{output}}/completed_${SLURM_ARRAY_TASK_ID}.log
+        cp "${fout}.fastq.gz" "${final}.fastq.gz"
+        exit 0
+    else
+        echo "${sample_name}" > {{output}}/failed.log
+        exit 0
+    fi
+}
+
+trap lima_error_handler ERR
+
+{{lima_cmd}} > ${fout}.lima.log 2>&1
 
 # let's check that we actually removed some files
 column=$(head -1 "${fout}.lima.counts" | tr '\t' '\n' | grep -En "Counts" | cut -d: -f1)
 counts=$(cut -f "${column}" "${fout}.lima.counts" | tail -n 1)
 
-# if not zero, then run the next command, else copy input
+# if not zero, then run the next command, else copy input - note that in theory this should never happen
 if [[ "$counts" -gt "0" ]]; then
     pbmarkdup "${fout}.fastq.gz" "${final}.fastq"
-else
-    cp "${fout}.fastq.gz" "${final}.fastq.gz"
 fi
 
 touch {{output}}/completed_${SLURM_ARRAY_TASK_ID}.log
