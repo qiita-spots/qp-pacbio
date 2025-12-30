@@ -20,8 +20,8 @@ input=$(head -n $step {{output}}/sample_list.txt | tail -n 1)
 sample_name=`echo $input | awk '{print $1}'`
 filename=`echo $input | awk '{print $2}'`
 fn=`basename ${filename}`
-fout=${out_folder}/lima/${fn}
-final=${out_folder}/final/${fn}
+fout=${out_folder}/lima/${fn/.fastq.gz/}
+final=${out_folder}/final/${fn/.fastq.gz/}
 
 {{lima_cmd}}
 
