@@ -634,10 +634,15 @@ def pacbio_apdater_removal(qclient, job_id, parameters, out_dir):
     if completed != samples:
         errors.append(f"There are {samples - completed} missing samples.")
 
-    fp_seqs = f"{out_dir}/processing/filtered"
+    fp_seqs = f"{out_dir}/processing/final"
     reads = []
     for f in glob(f"{fp_seqs}/*.fastq.gz"):
         reads.append((f, "raw_forward_seqs"))
+
+    if not reads or len(reads) != samples:
+        errors.append(
+            f"Missing {len(reads) - samples} read files. Please contact the admin. "
+        )
 
     if not errors:
         ainfo.append(ArtifactInfo("no adapter reads", "per_sample_FASTQ", reads))
