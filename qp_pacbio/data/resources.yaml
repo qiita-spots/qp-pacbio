@@ -70,3 +70,15 @@ Remove SynDNA plasmid, insert, & GCF_000184185 reads (minimap2):
     nprocs: 1
     wall_time_limit: 4:00:00
     mem_in_gb: 4
+PacBio adapter removal:
+  processing:
+    node_count: 1
+    nprocs: 1
+    wall_time_limit: 16:00:00
+    mem_in_gb: 100
+    max_tasks: 16
+  finish:
+    node_count: 1
+    nprocs: 1
+    wall_time_limit: 1:00:00
+    mem_in_gb: 4

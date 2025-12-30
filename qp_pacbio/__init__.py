@@ -9,6 +9,7 @@ from qiita_client import QiitaCommand, QiitaPlugin
 
 from .qp_pacbio import (
     minimap2_processing,
+    pacbio_apdater_removal,
     pacbio_processing,
     syndna_processing,
 )
@@ -90,3 +91,49 @@ pacbio_processing_cmd = QiitaCommand(
     dflt_param_set,
 )
 plugin.register_command(pacbio_processing_cmd)
+
+#
+# pacbio adapter filtering
+#
+
+req_params = {
+    "artifact": ("artifact", ["per_sample_FASTQ"]),
+}
+opt_params = {
+    "adapter": ("string", "AAGCAGTGGTATCAACGCAGAGTACT"),
+    "ccs": ("boolean", "False"),
+    "min-score": ("integer", "0"),
+    "min-end-score": ("integer", "0"),
+    "min-ref-span": ("float", "0.5"),
+    "min-scoring-regions": ("integer", "1"),
+    "min-score-lead": ("integer", "10"),
+    "min-length": ("integer", "50"),
+    "window-size-multi": ("float", "3"),
+}
+outputs = {
+    "no adapter reads": "per_sample_FASTQ",
+}
+dflt_param_set = {
+    "PacBio adapter": {
+        "adapter": "AAGCAGTGGTATCAACGCAGAGTACT",
+        "ccs": False,
+        "min-score": 0,
+        "min-end-score": 0,
+        "min-ref-span": 0.5,
+        "min-scoring-regions": 1,
+        "min-score-lead": 10,
+        "min-length": 50,
+        "window-size-multi": 3,
+    }
+}
+
+pacbio_apdater_removal_cmd = QiitaCommand(
+    "PacBio adapter removal",
+    "Remove adapter reads using lima/pbmarkdup",
+    pacbio_apdater_removal,
+    req_params,
+    opt_params,
+    outputs,
+    dflt_param_set,
+)
+plugin.register_command(pacbio_apdater_removal_cmd)
