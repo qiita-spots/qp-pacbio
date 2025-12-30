@@ -636,7 +636,7 @@ def pacbio_apdater_removal(qclient, job_id, parameters, out_dir):
 
     fp_seqs = f"{out_dir}/processing/final"
     reads = []
-    for f in glob(f"{fp_seqs}/*.fastq.gz"):
+    for f in glob(f"{fp_seqs}/*.fastq"):
         reads.append((f, "raw_forward_seqs"))
 
     if not reads or len(reads) != samples:

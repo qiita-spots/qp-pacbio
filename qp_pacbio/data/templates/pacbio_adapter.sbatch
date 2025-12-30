@@ -31,7 +31,7 @@ counts=$(cut -f "${column}" "${fout}.lima.counts" | tail -n 1)
 
 # if not zero, then run the next command, else copy input
 if [[ "$counts" -gt "0" ]]; then
-    pbmarkdup "${fout}.fastq.gz" "${final}.fastq.gz"
+    pbmarkdup "${fout}.fastq.gz" "${final}.fastq"
 else
     cp "${fout}.fastq.gz" "${final}.fastq.gz"
 fi
