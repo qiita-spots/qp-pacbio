@@ -26,7 +26,7 @@ final=${out_folder}/final/${fn/.fastq.gz/}
 lima_error_handler () {
     if grep -qF "Could not find matching barcodes" ${fout}.lima.log; then
         touch {{output}}/completed_${SLURM_ARRAY_TASK_ID}.log
-         cp "${fout}.fastq.gz" "${final}.fastq.gz"
+         cp "${filename}" "${final}.fastq.gz"
         exit 0
     else
         echo "${sample_name}" > {{output}}/failed.log

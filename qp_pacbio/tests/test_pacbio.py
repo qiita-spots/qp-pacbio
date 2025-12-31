@@ -447,7 +447,7 @@ class PacAdapterRmTests(PacBioTests):
             "lima_error_handler () {\n",
             '    if grep -qF "Could not find matching barcodes" ${fout}.lima.log; then\n',
             f"        touch {out_dir}/completed_${{SLURM_ARRAY_TASK_ID}}.log\n",
-            '         cp "${fout}.fastq.gz" "${final}.fastq.gz"\n',
+            '         cp "${filename}" "${final}.fastq.gz"\n',
             "        exit 0\n",
             "    else\n",
             f'        echo "${{sample_name}}" > {out_dir}/failed.log\n',
