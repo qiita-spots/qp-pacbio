@@ -593,3 +593,154 @@ def generate_syndna_processing(qclient, job_id, out_dir, parameters, url):
     minimap2_finish_script = _write_slurm(f"{out_dir}/finish", m2mt, **params)
 
     return minimap2_script, minimap2_finish_script
+
+
+def pacbio_adapter_removal(qclient, job_id, parameters, out_dir):
+    """generates output for syndna processing.
+
+    Parameters
+    ----------
+    qclient : tgp.qiita_client.QiitaClient
+        Qiita server client.
+    job_id : str
+        Job id.
+    parameters : dict
+        Parameters for this job.
+    out_dir : str
+        Output directory.
+
+    Returns
+    -------
+    bool, list, str
+        Results tuple for Qiita.
+    """
+    qclient.update_job_step(job_id, "Commands finished")
+
+    errors = []
+    ainfo = []
+
+    failures = glob(f"{out_dir}/failed_*.log")
+    if failures:
+        errors.append("Samples failed: ")
+        for f in failures:
+            with open(f, "r") as fp:
+                errors.append(fp.read())
+        return False, ainfo, "\n".join(errors)
+
+    completed = len(glob(f"{out_dir}/completed_*.log"))
+    with open(f"{out_dir}/sample_list.txt") as fp:
+        samples = len(fp.readlines())
+
+    if completed != samples:
+        errors.append(f"There are {samples - completed} missing samples.")
+
+    fp_seqs = f"{out_dir}/processing/final"
+    reads = []
+    for f in glob(f"{fp_seqs}/*.fastq*"):
+        reads.append((f, "raw_forward_seqs"))
+
+    if not reads or len(reads) != samples:
+        errors.append(
+            f"Missing {samples - len(reads)} read files. Please contact the admin."
+        )
+    elif len([r for r in reads if r[0].endswith("fastq.gz")]) == samples:
+        errors.append(
+            "None of the files have the adaptor; if this is mistake contact the admins."
+        )
+
+    if not errors:
+        ainfo.append(ArtifactInfo("no adapter reads", "per_sample_FASTQ", reads))
+    else:
+        return False, ainfo, "\n".join(errors)
+
+    return True, ainfo, ""
+
+
+def generate_pacbio_adapter_removal(qclient, job_id, out_dir, parameters, url):
+    """generates slurm scripts for pacbio adapter removal.
+
+    Parameters
+    ----------
+    qclient : tgp.qiita_client.QiitaClient
+        Qiita server client.
+    job_id : str
+        Job id.
+    out_dir : str
+        Output directory.
+    parameters : dict
+        Parameters for this job.
+    url : str
+        URL to send the respose, finish the job.
+
+    Returns
+    -------
+    str, str
+        Returns the two filepaths of the slurm scripts
+    """
+    resources = RESOURCES["PacBio adapter removal via lima/pbmarkdup"]
+    main_parameters = {
+        "conda_environment": CONDA_ENVIRONMENT,
+        "output": out_dir,
+        "qjid": job_id,
+    }
+
+    qclient.update_job_step(
+        job_id, "Step 1 of 4: Collecting info and generating submission"
+    )
+
+    artifact_id = parameters["artifact"]
+
+    njobs = generate_sample_list(qclient, artifact_id, out_dir)
+
+    qclient.update_job_step(
+        job_id,
+        "Step 2 of 4: Creating submission templates",
+    )
+
+    lima_cmd = f'lima "${{filename}}" {out_dir}/adapter.fasta "${{fout}}.fastq.gz" --hifi-preset SYMMETRIC --peek-guess'
+    if parameters["css"] and parameters["css"] != "False":
+        lima_cmd += " --css"
+    for k, v in parameters.items():
+        if k in {
+            "min-score",
+            "min-end-score",
+            "min-ref-span",
+            "min-scoring-regions",
+            "min-score-lead",
+            "min-length",
+            "window-size-multi",
+        }:
+            lima_cmd += f" --{k} {v}"
+
+    template = JGT("pacbio_adapter.sbatch")
+    step_resources = resources["processing"]
+    params = main_parameters | {
+        "job_name": f"sd_{job_id}",
+        "node_count": step_resources["node_count"],
+        "nprocs": step_resources["nprocs"],
+        "wall_time_limit": step_resources["wall_time_limit"],
+        "mem_in_gb": step_resources["mem_in_gb"],
+        "array_params": f"1-{njobs}%{step_resources['max_tasks']}",
+        "lima_cmd": lima_cmd,
+    }
+    processing_script = _write_slurm(f"{out_dir}/processing", template, **params)
+
+    template = JGT("pacbio_adapter_finish.sbatch")
+    step_resources = resources["finish"]
+    params = main_parameters | {
+        "job_name": f"me_{job_id}",
+        "node_count": step_resources["node_count"],
+        "nprocs": step_resources["nprocs"],
+        "wall_time_limit": step_resources["wall_time_limit"],
+        "mem_in_gb": step_resources["mem_in_gb"],
+        "url": url,
+    }
+    finish_script = _write_slurm(f"{out_dir}/finish", template, **params)
+
+    with open(f"{out_dir}/adapter.fasta", "w") as fp:
+        for i, adapter in enumerate(parameters["adapter"].split(",")):
+            i += 1
+            fp.write(f">adapter_{i}\n")
+            fp.write(f"{adapter}\n")
+
+    return processing_script, finish_script
