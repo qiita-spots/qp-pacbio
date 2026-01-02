@@ -19,7 +19,7 @@ from qp_pacbio import plugin
 from qp_pacbio.qp_pacbio import (
     CONDA_ENVIRONMENT,
     generate_minimap2_processing,
-    generate_pacbio_apdater_removal,
+    generate_pacbio_adapter_removal,
     generate_sample_list,
     generate_syndna_processing,
     pacbio_generate_templates,
@@ -408,7 +408,7 @@ class PacAdapterRmTests(PacBioTests):
 
         url = "https://test.test.edu/"
         # this should fail cause we don't have valid data
-        main_fp, finish_fp = generate_pacbio_apdater_removal(
+        main_fp, finish_fp = generate_pacbio_adapter_removal(
             self.qclient, job_id, out_dir, params, url
         )
         with open(main_fp, "r") as f:

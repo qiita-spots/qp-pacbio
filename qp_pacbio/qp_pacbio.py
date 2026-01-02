@@ -595,7 +595,7 @@ def generate_syndna_processing(qclient, job_id, out_dir, parameters, url):
     return minimap2_script, minimap2_finish_script
 
 
-def pacbio_apdater_removal(qclient, job_id, parameters, out_dir):
+def pacbio_adapter_removal(qclient, job_id, parameters, out_dir):
     """generates output for syndna processing.
 
     Parameters
@@ -656,7 +656,7 @@ def pacbio_apdater_removal(qclient, job_id, parameters, out_dir):
     return True, ainfo, ""
 
 
-def generate_pacbio_apdater_removal(qclient, job_id, out_dir, parameters, url):
+def generate_pacbio_adapter_removal(qclient, job_id, out_dir, parameters, url):
     """generates slurm scripts for pacbio adapter removal.
 
     Parameters

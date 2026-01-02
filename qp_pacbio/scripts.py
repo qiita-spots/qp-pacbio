@@ -19,7 +19,7 @@ from qp_pacbio import plugin
 from qp_pacbio.qp_pacbio import (
     PACBIO_PROCESSING_STEPS,
     generate_minimap2_processing,
-    generate_pacbio_apdater_removal,
+    generate_pacbio_adapter_removal,
     generate_sample_list,
     generate_syndna_processing,
     pacbio_generate_templates,
@@ -61,7 +61,7 @@ def execute(url, job_id, output_dir):
         regular_commands = {
             "Woltka v0.1.7, minimap2": generate_minimap2_processing,
             "Remove SynDNA plasmid, insert, & GCF_000184185 reads (minimap2)": generate_syndna_processing,
-            "PacBio adapter removal via lima/pbmarkdup": generate_pacbio_apdater_removal,
+            "PacBio adapter removal via lima/pbmarkdup": generate_pacbio_adapter_removal,
         }
 
         if command in regular_commands.keys():

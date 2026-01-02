@@ -9,7 +9,7 @@ from qiita_client import QiitaCommand, QiitaPlugin
 
 from .qp_pacbio import (
     minimap2_processing,
-    pacbio_apdater_removal,
+    pacbio_adapter_removal,
     pacbio_processing,
     syndna_processing,
 )
@@ -127,13 +127,13 @@ dflt_param_set = {
     }
 }
 
-pacbio_apdater_removal_cmd = QiitaCommand(
+pacbio_adapter_removal_cmd = QiitaCommand(
     "PacBio adapter removal via lima/pbmarkdup",
     "Remove adapter reads using lima/pbmarkdup",
-    pacbio_apdater_removal,
+    pacbio_adapter_removal,
     req_params,
     opt_params,
     outputs,
     dflt_param_set,
 )
-plugin.register_command(pacbio_apdater_removal_cmd)
+plugin.register_command(pacbio_adapter_removal_cmd)
