@@ -39,6 +39,7 @@ metawrap_error_handler () {
     # however, during our testing we saw that when it failed unexpectedly it will _not_
     # create a bin.log file in the work_folder
     if [ -f ${folder}/maxbin2_out/bin.log ]; then
+        touch {{output}}/step-4/completed_${SLURM_ARRAY_TASK_ID}.log
         touch {{output}}/step-5/completed_${SLURM_ARRAY_TASK_ID}.log
         touch {{output}}/step-6/completed_${SLURM_ARRAY_TASK_ID}.log
         touch {{output}}/step-7/completed_${SLURM_ARRAY_TASK_ID}.log
