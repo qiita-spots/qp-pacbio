@@ -732,6 +732,7 @@ class PacBioFeatureTableTests(PacBioTests):
             f"input=$(head -n $step {out_dir}/sample_list.txt | tail -n 1)\n",
             "sample_name=`echo $input | awk '{print $1}'`\n",
             "filename=`echo $input | awk '{print $2}'`\n",
+            "aid=`echo $input | awk '{print $3}'`\n",
             "fn=`basename ${filename}`\n",
             "\n",
             f"out_folder={out_dir}/remap\n",
