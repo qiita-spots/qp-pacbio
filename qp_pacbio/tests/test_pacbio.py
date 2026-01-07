@@ -736,7 +736,7 @@ class PacBioFeatureTableTests(PacBioTests):
             "fn=`basename ${filename}`\n",
             "\n",
             f"out_folder={out_dir}/remap\n",
-            "sn_folder=${out_folder}/bioms/${sample_name}\n",
+            "sn_folder=${out_folder}/bioms/${aid}_${sample_name}\n",
             "export TMPDIR=${out_folder}/tmp\n",
             "mkdir -p ${TMPDIR} ${sn_folder}\n",
             "\n",
