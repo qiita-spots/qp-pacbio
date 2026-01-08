@@ -14,7 +14,7 @@ from .qp_pacbio import (
     pacbio_processing,
     syndna_processing,
 )
-from .util import plugin_details
+from .util import get_local_adapter_files, plugin_details
 
 plugin = QiitaPlugin(**plugin_details)
 
@@ -101,7 +101,11 @@ req_params = {
     "artifact": ("artifact", ["per_sample_FASTQ"]),
 }
 opt_params = {
-    "adapter": ("string", "AAGCAGTGGTATCAACGCAGAGTACT"),
+    # NOTE ABOUT adapter_sets: this is a comma-separated string.  Its contents can be either (or both):
+    # - a comma-separated list of sequences to filter
+    # - a comma-separated list of filenames to use; these should live in qp_pacbio/data/adapters/
+    # the code will "merge" all these options
+    "adapter_sets": ("string", "AAGCAGTGGTATCAACGCAGAGTACT"),
     "css": ("boolean", "False"),
     "min-score": ("integer", "0"),
     "min-end-score": ("integer", "0"),
@@ -116,7 +120,7 @@ outputs = {
 }
 dflt_param_set = {
     "PacBio adapter": {
-        "adapter": "AAGCAGTGGTATCAACGCAGAGTACT",
+        "adapter_sets": "AAGCAGTGGTATCAACGCAGAGTACT",
         "css": False,
         "min-score": 0,
         "min-end-score": 0,
@@ -127,6 +131,19 @@ dflt_param_set = {
         "window-size-multi": 3,
     }
 }
+for name in get_local_adapter_files().keys():
+    dflt_param_set[name] = {
+        "adapter_sets": name,
+        "css": False,
+        "min-score": 0,
+        "min-end-score": 0,
+        "min-ref-span": 0.5,
+        "min-scoring-regions": 1,
+        "min-score-lead": 10,
+        "min-length": 50,
+        "window-size-multi": 3,
+    }
+
 
 pacbio_adapter_removal_cmd = QiitaCommand(
     "PacBio adapter removal via lima/pbmarkdup",
