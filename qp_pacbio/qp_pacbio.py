@@ -742,7 +742,7 @@ def generate_pacbio_adapter_removal(qclient, job_id, out_dir, parameters, url):
     with open(f"{out_dir}/adapter.fasta", "w") as fp:
         for i, adapter in enumerate(parameters["adapter"].split(",")):
             if adapter in local_adapters.keys():
-                with gopen(local_adapters[adapter], "r") as gfp:
+                with gopen(local_adapters[adapter], "rt", encoding="utf-8") as gfp:
                     fp.write(gfp.read())
             else:
                 i += 1
