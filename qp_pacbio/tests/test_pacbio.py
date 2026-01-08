@@ -7,8 +7,9 @@
 # -----------------------------------------------------------------------------
 
 from json import dumps
-from os import remove
-from os.path import exists, isdir, join
+from os import makedirs, remove
+from os.path import dirname, exists, isdir, join
+from pathlib import Path
 from shutil import copyfile, rmtree
 from tempfile import mkdtemp
 from unittest import main
@@ -18,12 +19,14 @@ from qiita_client.testing import PluginTestCase
 from qp_pacbio import plugin
 from qp_pacbio.qp_pacbio import (
     CONDA_ENVIRONMENT,
+    generate_feature_table_scripts,
     generate_minimap2_processing,
     generate_pacbio_adapter_removal,
     generate_sample_list,
     generate_syndna_processing,
     pacbio_generate_templates,
 )
+from qp_pacbio.util import plugin_details
 
 # Exact expected Step-1 script matching your template.
 # Escape ${...} -> ${{...}} and awk braces -> '{{print $1}}' etc.
@@ -316,7 +319,7 @@ class PacWoltkaSynDNATests(PacBioTests):
             f"out_folder={out_dir}/syndna\n",
             "mkdir -p ${out_folder}\n",
             "cd ${out_folder}\n",
-            "db_folder=/scratch/qp-pacbio/minimap2/syndna/\n",
+            "db_folder=/scratch/qp-pacbio/syndna/\n",
             "\n",
             "step=${SLURM_ARRAY_TASK_ID}\n",
             f"input=$(head -n $step {out_dir}/sample_list.txt | tail -n 1)\n",
@@ -489,6 +492,297 @@ class PacAdapterRmTests(PacBioTests):
             f"finish_qp_pacbio https://test.test.edu/ my-job-id {out_dir}",
         ]
         self.assertEqual(obs_finish, exp_merge)
+
+
+class PacBioFeatureTableTests(PacBioTests):
+    def _helper_woltka_bowtie(self):
+        aids = []
+        in_dir = mkdtemp()
+        self._clean_up_files.append(in_dir)
+        for i in range(2):
+            parent_id = self._insert_data()
+
+            # now that we have a parent we can create a job
+            # to simulate that we process the parent to create
+            # the inputs for this tests
+
+            data = {
+                "user": "demo@microbio.me",
+                "command": dumps(
+                    [
+                        plugin_details["name"],
+                        plugin_details["version"],
+                        "PacBio processing",
+                    ]
+                ),
+                "status": "running",
+                "parameters": dumps({"artifact": parent_id}),
+            }
+            job_id = self.qclient.post("/apitest/processing_job/", data=data)["job"]
+
+            # creating folder structures to then insert artifacts
+            self._clean_up_files.append(in_dir)
+            results = join(in_dir, "tmp", f"results_{i}")
+            for folder in ["small_LCG", "MAG", "LCG"]:
+                for sample in ["1.SKB8.640193", "1.SKD8.640184"]:
+                    makedirs(f"{results}/{sample}/{folder}")
+            Path(f"{results}/1.SKB8.640193/1.SKD8.640184.checkm.txt.gz").touch()
+            Path(f"{results}/1.SKD8.640184/1.SKD8.640184.checkm.txt.gz").touch()
+            Path(f"{results}/1.SKB8.640193/1.SKD8.640184.noLCG.fna.gz").touch()
+            Path(f"{results}/1.SKD8.640184/1.SKD8.640184.noLCG.fna.gz").touch()
+
+            Path(
+                f"{results}/1.SKB8.640193/LCG/1.SKD8.640184_MaxBin_bin.1.fna.gz"
+            ).touch()
+            Path(
+                f"{results}/1.SKB8.640193/LCG/1.SKD8.640184_MaxBin_bin.0.fna.gz"
+            ).touch()
+            Path(
+                f"{results}/1.SKD8.640184/LCG/1.SKD8.640184_MaxBin_bin.1.fna.gz"
+            ).touch()
+            Path(
+                f"{results}/1.SKD8.640184/LCG/1.SKD8.640184_MaxBin_bin.0.fna.gz"
+            ).touch()
+
+            Path(
+                f"{results}/1.SKB8.640193/MAG/1.SKB8.640193.s37.ctg000038c.fna.gz"
+            ).touch()
+            Path(
+                f"{results}/1.SKB8.640193/MAG/1.SKB8.640193.s40.ctg000042c.fna.gz"
+            ).touch()
+            Path(
+                f"{results}/1.SKD8.640184/MAG/1.SKD8.640184.s37.ctg000038c.fna.gz"
+            ).touch()
+            Path(
+                f"{results}/1.SKD8.640184/MAG/1.SKD8.640184.s40.ctg000042c.fna.gz"
+            ).touch()
+
+            data = {
+                "filepaths": dumps(
+                    [
+                        (results, "directory"),
+                    ]
+                ),
+                "type": "job-output-folder",
+                "name": "Test artifact",
+                "parents": dumps([parent_id]),
+                "job_id": job_id,
+            }
+            aid = self.qclient.post("/apitest/artifact/", data=data)["artifact"]
+            aids.append(aid)
+            # retriving final location of files to delete them and avoid future errors
+            fps, _ = self.qclient.artifact_and_preparation_files(aid)
+            self._clean_up_files.append(dirname(fps["directory"][0]))
+
+        data = {
+            "user": "demo@microbio.me",
+            "command": dumps(
+                [
+                    plugin_details["name"],
+                    plugin_details["version"],
+                    "Feature Table from LCG/MAG",
+                ]
+            ),
+            "status": "running",
+            # 2 is an existing analysis in the Qiita development database
+            "parameters": dumps({"analysis": 2, "artifacts": aids}),
+        }
+        job_id = self.qclient.post("/apitest/processing_job/", data=data)["job"]
+
+        return job_id, aids
+
+    def test_pacbio_feature_table(self):
+        job_id, aids = self._helper_woltka_bowtie()
+        job_info = self.qclient.get_job_info(job_id)
+        parameters = job_info["parameters"]
+
+        out_dir = mkdtemp()
+        self._clean_up_files.append(out_dir)
+
+        url = "https://test.test.edu/"
+        merge_fp, remap_fp, finish_fp = generate_feature_table_scripts(
+            self.qclient, job_id, out_dir, parameters, url
+        )
+
+        with open(merge_fp, "r") as f:
+            obs_merge = [line for line in f.readlines() if not line.startswith("# ")]
+        with open(remap_fp, "r") as f:
+            obs_remap = [line for line in f.readlines() if not line.startswith("# ")]
+        with open(finish_fp, "r") as f:
+            obs_finish = [line for line in f.readlines() if not line.startswith("# ")]
+
+        exp_merge = [
+            "#!/bin/bash\n",
+            f"#SBATCH -J m_{job_id}\n",
+            "#SBATCH -p qiita\n",
+            "#SBATCH -N 1\n",
+            "#SBATCH -n 32\n",
+            "#SBATCH --time 54000\n",
+            "#SBATCH --mem 180G\n",
+            f"#SBATCH -o {out_dir}/merge/logs/%x-%A.out\n",
+            f"#SBATCH -e {out_dir}/merge/logs/%x-%A.err\n",
+            "\n",
+            "source ~/.bashrc\n",
+            "set -e\n",
+            f"{CONDA_ENVIRONMENT}\n",
+            f"cd {out_dir}/merge\n",
+            "\n",
+            f"python -c \"from qp_pacbio.util import client_connect; qclient = client_connect('{url}'); qclient.update_job_step('{job_id}', 'Merging LCG/MAG files')\"\n",
+            "\n",
+            "\n",
+            "mkdir -p LCG all_fna checkm\n",
+            "\n",
+            "for file in $(ls ../*_folders.tsv); do\n",
+            "    for folder in $(cat ${file}); do\n",
+            "        ffn=$(basename $folder);\n",
+            "        aid=${ffn%%_*};\n",
+            "        # the pattern of the folers is [folder]/results/[LCG|MAG]/[sample-id]/\n",
+            "        for f in $(ls ${folder}/*/*/LCG/*fna.gz 2> /dev/null || true); do\n",
+            "            bn=$(basename ${f/.gz/});\n",
+            '            echo "gunzip -c ${f} > LCG/${aid}_${bn}"\n',
+            "        done\n",
+            "        for f in $(ls ${folder}/*/*/MAG/*fna.gz 2> /dev/null || true); do\n",
+            "            bn=$(basename ${f/.gz/});\n",
+            '            echo "gunzip -c ${f} > all_fna/${aid}_${bn}"\n',
+            "        done\n",
+            "        # the pattern for txts is [folder]/results/*checkm.txt.gz\n",
+            "        for f in $(ls ${folder}/*/*/*checkm.txt.gz); do\n",
+            "            bn=$(basename ${f/.gz/});\n",
+            '            echo "zcat ${f} > checkm/${aid}_${bn}";\n',
+            "        done\n",
+            "    done\n",
+            "done | parallel --halt now,fail=1 -j 32\n",
+            "\n",
+            "head -n 1 $(ls checkm/*.txt | head -n 1) > merged_checkm.txt\n",
+            "for f in $(ls checkm/*.txt); do\n",
+            "    bn=$(basename $f)\n",
+            "    aid=${bn%%_*}\n",
+            "    awk -v aid=${aid}_ 'NR > 1 { print aid $0 }' ${f} >> merged_checkm.txt\n",
+            "done\n",
+            "\n",
+            f"python -c \"from qp_pacbio.util import client_connect; qclient = client_connect('{url}'); qclient.update_job_step('{job_id}', 'Running checkm')\"\n",
+            "\n",
+            'if [ -n "$(ls -A "LCG")" ]; then\n',
+            "    checkm lineage_wf LCG LCG_checkm -x fna -t 32 --tab_table -f LCG_checkm.txt --pplacer_threads 1\n",
+            "    awk FNR!=1 LCG_checkm.txt >> merged_checkm.txt;\n",
+            "    mv LCG/*.fna all_fna/\n",
+            "fi\n",
+            "\n",
+            f"python -c \"from qp_pacbio.util import client_connect; qclient = client_connect('{url}'); qclient.update_job_step('{job_id}', 'Running galah')\"\n",
+            "\n",
+            "galah cluster --checkm-tab-table merged_checkm.txt --genome-fasta-directory all_fna \\\n",
+            "    -x fna --min-completeness 50 --max-contamination 10 --quality-formula dRep \\\n",
+            "    -t 32 --cluster-method fastani \\\n",
+            "    --output-representative-fasta-directory-copy dereplicated \\\n",
+            "    --output-cluster-definition dereplicated.txt \\\n",
+            "    --ani 0.995 \\\n",
+            "    --precluster-method finch\n",
+            "\n",
+            f"python -c \"from qp_pacbio.util import client_connect; qclient = client_connect('{url}'); qclient.update_job_step('{job_id}', 'Running gtdbtk')\"\n",
+            "\n",
+            'export GTDBTK_DATA_PATH="/scratch/qp-pacbio/gtdbtk_v226_db/"\n',
+            "gtdbtk classify_wf --genome_dir dereplicated \\\n",
+            "    --out_dir dereplicated_gtdbtk --cpus 32 \\\n",
+            "    --pplacer_cpus 3 -x fna --skip_ani_screen\n",
+            "\n",
+            f"python -c \"from qp_pacbio.util import client_connect; qclient = client_connect('{url}'); qclient.update_job_step('{job_id}', 'Running GToTree')\"\n",
+            "\n",
+            "ls ${PWD}/dereplicated/* > genomes.txt\n",
+            "GToTree -f genomes.txt -o phylogeny -j 32 -H Bacteria -c 0.4 -G 0.4\n",
+            "\n",
+            f"for f in $(ls {out_dir}/*_sample_list.txt); do\n",
+            "    fn=$(basename $f)\n",
+            "    aid=${fn%%_*}\n",
+            f'    sed "s/$/\\t${{aid}}/" ${{f}} >> {out_dir}/sample_list.txt\n',
+            f'    echo "" >> {out_dir}/sample_list.txt\n',
+            "done\n",
+            "\n",
+            f"python -c \"from qp_pacbio.util import client_connect; qclient = client_connect('{url}'); qclient.update_job_step('{job_id}', 'Remapping')\"",
+        ]
+
+        self.assertEqual(obs_merge, exp_merge)
+
+        # checking the expected files and number of lines
+        for aid in aids:
+            with open(f"{out_dir}/{aid}_prep_info_artifact.tsv", "r") as fp:
+                self.assertEqual(3, len(fp.readlines()))
+            with open(f"{out_dir}/{aid}_folders.tsv", "r") as fp:
+                self.assertEqual(1, len(fp.readlines()))
+            # aid - 1, is a safe assumption as the child is created just after the parent
+            with open(f"{out_dir}/{aid}_{aid - 1}_sample_list.txt", "r") as fp:
+                self.assertEqual(2, len(fp.readlines()))
+
+        exp_remap = [
+            "#!/bin/bash\n",
+            f"#SBATCH -J re_{job_id}\n",
+            "#SBATCH -p qiita\n",
+            "#SBATCH -N 1\n",
+            "#SBATCH -n 12\n",
+            "#SBATCH --time 7200\n",
+            "#SBATCH --mem 50G\n",
+            f"#SBATCH -o {out_dir}/remap/logs/%x-%A_%a.out\n",
+            f"#SBATCH -e {out_dir}/remap/logs/%x-%A_%a.err\n",
+            "#SBATCH --array 1-4%8\n",
+            "\n",
+            "source ~/.bashrc\n",
+            "set -e\n",
+            f"{CONDA_ENVIRONMENT}\n",
+            "\n",
+            "step=${SLURM_ARRAY_TASK_ID}\n",
+            f"input=$(head -n $step {out_dir}/sample_list.txt | tail -n 1)\n",
+            "sample_name=`echo $input | awk '{print $1}'`\n",
+            "filename=`echo $input | awk '{print $2}'`\n",
+            "aid=`echo $input | awk '{print $3}'`\n",
+            "fn=`basename ${filename}`\n",
+            "\n",
+            f"out_folder={out_dir}/remap\n",
+            "sn_folder=${out_folder}/bioms/${aid}_${sample_name}\n",
+            "export TMPDIR=${out_folder}/tmp\n",
+            "mkdir -p ${TMPDIR} ${sn_folder}\n",
+            "\n",
+            "txt=${sn_folder}/${sample_name}.txt\n",
+            "tsv=${txt/.txt/.tsv}\n",
+            f"coverm genome -d {out_dir}/merge/dereplicated -x fna --mapper minimap2-hifi -m covered_bases trimmed_mean mean length count \\\n",
+            "    --trim-min 0.05 --trim-max 0.95 --min-read-percent-identity 0.995 \\\n",
+            "    --min-read-aligned-percent 0.90 --min-covered-fraction 0 -t 12 \\\n",
+            "    --single ${filename} --output-file ${txt}\n",
+            "\n",
+            "awk 'BEGIN {FS=OFS=\"\\t\"}; {print $1,$NF}' ${txt} | \\\n",
+            "    sed 's/Contig/\\#OTU ID/' | sed  's/dereplicated_gtdbtk\\///' | \\\n",
+            "    sed  's/ Read Count//' | sed \"s/${fn}/${sample_name}/\" > ${tsv}\n",
+            "\n",
+            "counts=`tail -n +2 ${tsv} | awk '{sum += $NF} END {print sum}'`\n",
+            'if [[ "$counts" != "0" ]]; then\n',
+            "    biom convert -i ${tsv} -o ${sn_folder}/counts.biom --to-hdf5\n",
+            "fi\n",
+            "\n",
+            "touch ${out_folder}/completed_${SLURM_ARRAY_TASK_ID}.log",
+        ]
+        self.assertEqual(obs_remap, exp_remap)
+
+        exp_finish = [
+            "#!/bin/bash\n",
+            f"#SBATCH -J f_{job_id}\n",
+            "#SBATCH -p qiita\n",
+            "#SBATCH -N 1\n",
+            "#SBATCH -n 1\n",
+            "#SBATCH --time 14400\n",
+            "#SBATCH --mem 4G\n",
+            f"#SBATCH -o {out_dir}/finish/logs/%x-%A_%a.out\n",
+            f"#SBATCH -e {out_dir}/finish/logs/%x-%A_%a.err\n",
+            "\n",
+            "source ~/.bashrc\n",
+            "set -e\n",
+            f"{CONDA_ENVIRONMENT}\n",
+            f"cd {out_dir}/\n",
+            "\n",
+            f"python -c \"from qp_pacbio.util import client_connect; qclient = client_connect('{url}'); qclient.update_job_step('{job_id}', 'Merging BIOMs')\"\n",
+            "\n",
+            f"biom_merge_pacbio --base {out_dir}/remap --merge-type counts\n",
+            "\n",
+            f"finish_qp_pacbio {url} {job_id} {out_dir}",
+        ]
+        self.assertEqual(obs_finish, exp_finish)
 
 
 if __name__ == "__main__":
