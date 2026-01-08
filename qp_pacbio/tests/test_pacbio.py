@@ -396,7 +396,7 @@ class PacAdapterRmTests(PacBioTests):
         params = {
             "artifact": int(self._insert_data()),
             # this adapter selection will test all options: file and direct adapter value
-            "adapter": "AAGCAGTGGTATCAACGCAGAGTACT,twist_adapters_231010.fasta.gz",
+            "adapter_sets": "AAGCAGTGGTATCAACGCAGAGTACT,twist_adapters_231010.fasta.gz",
             "css": False,
             "min-score": 0,
             "min-end-score": 0,

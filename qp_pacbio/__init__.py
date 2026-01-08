@@ -101,7 +101,11 @@ req_params = {
     "artifact": ("artifact", ["per_sample_FASTQ"]),
 }
 opt_params = {
-    "adapter": ("string", "AAGCAGTGGTATCAACGCAGAGTACT"),
+    # NOTE ABOUT adapter_sets: it can be either (or both):
+    # - a list of sequences to filter
+    # - the filename to use, it should live in qp_pacbio/data/adapters/
+    # the code will "merge" all these options
+    "adapter_sets": ("string", "AAGCAGTGGTATCAACGCAGAGTACT"),
     "css": ("boolean", "False"),
     "min-score": ("integer", "0"),
     "min-end-score": ("integer", "0"),
@@ -116,7 +120,7 @@ outputs = {
 }
 dflt_param_set = {
     "PacBio adapter": {
-        "adapter": "AAGCAGTGGTATCAACGCAGAGTACT",
+        "adapter_sets": "AAGCAGTGGTATCAACGCAGAGTACT",
         "css": False,
         "min-score": 0,
         "min-end-score": 0,
@@ -129,7 +133,7 @@ dflt_param_set = {
 }
 for name in get_local_adapter_files().keys():
     dflt_param_set[name] = {
-        "adapter": name,
+        "adapter_sets": name,
         "css": False,
         "min-score": 0,
         "min-end-score": 0,

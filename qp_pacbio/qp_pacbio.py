@@ -7,7 +7,6 @@
 # -----------------------------------------------------------------------------
 from glob import glob
 from gzip import open as gopen
-from os import environ, makedirs, mkdir
 from os import environ, makedirs, mkdir, rename
 from os.path import basename, exists, join
 from shutil import copy2
@@ -743,13 +742,15 @@ def generate_pacbio_adapter_removal(qclient, job_id, out_dir, parameters, url):
 
     local_adapters = get_local_adapter_files()
     with open(f"{out_dir}/adapter.fasta", "w") as fp:
-        for i, adapter in enumerate(parameters["adapter"].split(",")):
+        for i, adapter in enumerate(parameters["adapter_sets"].split(",")):
             if adapter in local_adapters.keys():
                 with gopen(local_adapters[adapter], "rt", encoding="utf-8") as gfp:
                     fp.write(gfp.read())
+                    # adding new line just in case the adapter file doesn't have it
+                    fp.write("\n")
             else:
                 i += 1
-                fp.write(f">adapter_{i}\n")
+                fp.write(f">qp_pacbio_adapter_{adapter}_{i}\n")
                 fp.write(f"{adapter}\n")
 
     return processing_script, finish_script
