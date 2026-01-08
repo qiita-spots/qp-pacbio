@@ -191,7 +191,7 @@ class PacWoltkaProfilingTests(PacBioTests):
         exp_sql = [
             "CREATE TEMP TABLE lengths AS\n",
             "    SELECT *\n",
-            f'        FROM read_csv(\'{reference_len_map}\', header=false, delim=\'\\t\', columns = {"read_id": "VARCHAR", "length": "BIGINT"});\n',
+            f'        FROM read_csv(\'{reference_len_map}\', header=false, delim=\'\\t\', columns = {{"read_id": "VARCHAR", "length": "BIGINT"}});\n',
             "\n",
             "COPY (SELECT *\n",
             "      FROM read_alignments('/dev/stdin', reference_lengths='lengths')\n",
