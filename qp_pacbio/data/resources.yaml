@@ -90,3 +90,20 @@ PacBio adapter removal via lima/pbmarkdup:
     nprocs: 1
     wall_time_limit: 1:00:00
     mem_in_gb: 4
+Feature Table from LCG/MAG:
+  merge:
+    node_count: 1
+    nprocs: 32
+    wall_time_limit: 15:00:00
+    mem_in_gb: 180
+  remap:
+    node_count: 1
+    nprocs: 12
+    wall_time_limit: 2:00:00
+    mem_in_gb: 50
+    max_tasks: 8
+  finish:
+    node_count: 1
+    nprocs: 1
+    wall_time_limit: 4:00:00
+    mem_in_gb: 4
