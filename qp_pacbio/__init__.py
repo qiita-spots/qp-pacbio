@@ -101,9 +101,9 @@ req_params = {
     "artifact": ("artifact", ["per_sample_FASTQ"]),
 }
 opt_params = {
-    # NOTE ABOUT adapter_sets: it can be either (or both):
-    # - a list of sequences to filter
-    # - the filename to use, it should live in qp_pacbio/data/adapters/
+    # NOTE ABOUT adapter_sets: this is a comma-separated string.  Its contents can be either (or both):
+    # - a comma-separated list of sequences to filter
+    # - a comma-separated list of filenames to use; these should live in qp_pacbio/data/adapters/
     # the code will "merge" all these options
     "adapter_sets": ("string", "AAGCAGTGGTATCAACGCAGAGTACT"),
     "css": ("boolean", "False"),
