@@ -5,18 +5,17 @@
 #
 # The full license is in the file LICENSE, distributed with this software.
 # -----------------------------------------------------------------------------
-from os import environ
-from os.path import join, expanduser, getmtime, exists
-from configparser import ConfigParser
 import pathlib
+from configparser import ConfigParser
+from os import environ
+from os.path import exists, expanduser, getmtime, join
+
 from jinja2 import BaseLoader, TemplateNotFound
-
 from qiita_client import QiitaClient
-
 
 plugin_details = {
     "name": "qp-pacbio",
-    "version": "2025.11",
+    "version": "2026.01",
     "description": "PacBio processing",
 }
 
