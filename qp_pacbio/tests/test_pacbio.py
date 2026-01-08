@@ -176,6 +176,8 @@ class PacWoltkaProfilingTests(PacBioTests):
             obs_main = f.readlines()
         with open(merge_fp, "r") as f:
             obs_merge = f.readlines()
+        with open(f"{out_dir}/qcov-seqident-filter.sql", "r") as f:
+            obs_sql = f.readlines()
 
         resources = RESOURCES["Woltka v0.1.7 with cov and id filter"]
         reference = resources["minimap2"]["databases"]["WoLr2"]
@@ -185,6 +187,19 @@ class PacWoltkaProfilingTests(PacBioTests):
         reference_len_map = reference["reference_len_map"]
         reference_functional_dir = reference["reference_functional_dir"]
         miint_path = resources["minimap2"]["miint_path"]
+
+        exp_sql = [
+            "CREATE TEMP TABLE lengths AS\n",
+            "    SELECT *\n",
+            f'        FROM read_csv(\'{reference_len_map}\', header=false, delim=\'\\t\', columns = {"read_id": "VARCHAR", "length": "BIGINT"});\n',
+            "\n",
+            "COPY (SELECT *\n",
+            "      FROM read_alignments('/dev/stdin', reference_lengths='lengths')\n",
+            "          where alignment_seq_identity(cigar, tag_nm, tag_md, 'blast') > 0.9\n",
+            "              and alignment_query_coverage(cigar) > 0.9\n",
+            "     ) TO '/dev/stdout' (FORMAT SAM, INCLUDE_HEADER false);",
+        ]
+        self.assertEqual(obs_sql, exp_sql)
 
         exp_main = [
             "#!/bin/bash\n",
