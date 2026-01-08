@@ -20,6 +20,7 @@ from qp_pacbio.qp_pacbio import (
     BASEPATH,
     CONDA_ENVIRONMENT,
     generate_minimap2_processing,
+    generate_pacbio_adapter_removal,
     generate_sample_list,
     generate_syndna_processing,
     pacbio_generate_templates,
@@ -385,6 +386,109 @@ class PacWoltkaSynDNATests(PacBioTests):
             f"biom_merge_pacbio --base {out_dir}/syndna --merge-type syndna\n",
             "\n",
             "\n",
+            "\n",
+            f"finish_qp_pacbio https://test.test.edu/ my-job-id {out_dir}",
+        ]
+        self.assertEqual(obs_finish, exp_merge)
+
+
+class PacAdapterRmTests(PacBioTests):
+    def test_pacbio_adapter_removal(self):
+        params = {
+            "artifact": int(self._insert_data()),
+            "adapter": "AAGCAGTGGTATCAACGCAGAGTACT",
+            "css": False,
+            "min-score": 0,
+            "min-end-score": 0,
+            "min-ref-span": 0,
+            "min-scoring-regions": 0,
+            "min-score-lead": 0,
+            "min-length": 0,
+            "window-size-mult": 3,
+        }
+        job_id = "my-job-id"
+        out_dir = mkdtemp()
+        self._clean_up_files.append(out_dir)
+
+        url = "https://test.test.edu/"
+        # this should fail cause we don't have valid data
+        main_fp, finish_fp = generate_pacbio_adapter_removal(
+            self.qclient, job_id, out_dir, params, url
+        )
+        with open(main_fp, "r") as f:
+            # ignoring comments
+            obs_main = [line for line in f.readlines() if not line.startswith("# ")]
+        with open(finish_fp, "r") as f:
+            # ignoring comments
+            obs_finish = [line for line in f.readlines() if not line.startswith("# ")]
+
+        exp_main = [
+            "#!/bin/bash\n",
+            "#SBATCH -J sd_my-job-id\n",
+            "#SBATCH -p qiita\n",
+            "#SBATCH -N 1\n",
+            "#SBATCH -n 1\n",
+            "#SBATCH --time 57600\n",
+            "#SBATCH --mem 100G\n",
+            f"#SBATCH -o {out_dir}/processing/logs/%x-%A_%a.out\n",
+            f"#SBATCH -e {out_dir}/processing/logs/%x-%A_%a.err\n",
+            "#SBATCH --array 1-2%16\n",
+            "\n",
+            "source ~/.bashrc\n",
+            "set -e\n",
+            f"{CONDA_ENVIRONMENT}\n",
+            f"out_folder={out_dir}/processing/\n",
+            "mkdir -p ${out_folder}/lima ${out_folder}/final\n",
+            "\n",
+            "step=${SLURM_ARRAY_TASK_ID}\n",
+            f"input=$(head -n $step {out_dir}/sample_list.txt | tail -n 1)\n",
+            "sample_name=`echo $input | awk '{print $1}'`\n",
+            "filename=`echo $input | awk '{print $2}'`\n",
+            "fn=`basename ${filename}`\n",
+            "fout=${out_folder}/lima/${fn/.fastq.gz/}\n",
+            "final=${out_folder}/final/${fn/.fastq.gz/}\n",
+            "\n",
+            "lima_error_handler () {\n",
+            '    if grep -qF "Could not find matching barcodes" ${fout}.lima.log; then\n',
+            f"        touch {out_dir}/completed_${{SLURM_ARRAY_TASK_ID}}.log\n",
+            '         cp "${filename}" "${final}.fastq.gz"\n',
+            "        exit 0\n",
+            "    else\n",
+            f'        echo "${{sample_name}}" > {out_dir}/failed.log\n',
+            "        exit 0\n",
+            "    fi\n",
+            "}\n",
+            "\n",
+            "trap lima_error_handler ERR\n",
+            "\n",
+            f'lima "${{filename}}" {out_dir}/adapter.fasta "${{fout}}.fastq.gz" --hifi-preset SYMMETRIC --peek-guess --min-score 0 --min-end-score 0 --min-ref-span 0 --min-scoring-regions 0 --min-score-lead 0 --min-length 0 > ${{fout}}.lima.log 2>&1\n',
+            "\n",
+            "column=$(head -1 \"${fout}.lima.counts\" | tr '\\t' '\\n' | grep -En \"Counts\" | cut -d: -f1)\n",
+            'counts=$(cut -f "${column}" "${fout}.lima.counts" | tail -n 1)\n',
+            "\n",
+            'if [[ "$counts" -gt "0" ]]; then\n',
+            '    pbmarkdup "${fout}.fastq.gz" "${final}.fastq"\n',
+            "fi\n",
+            "\n",
+            f"touch {out_dir}/completed_${{SLURM_ARRAY_TASK_ID}}.log",
+        ]
+        self.assertEqual(obs_main, exp_main)
+
+        exp_merge = [
+            "#!/bin/bash\n",
+            "#SBATCH -J me_my-job-id\n",
+            "#SBATCH -p qiita\n",
+            "#SBATCH -N 1\n",
+            "#SBATCH -n 1\n",
+            "#SBATCH --time 3600\n",
+            "#SBATCH --mem 4G\n",
+            f"#SBATCH -o {out_dir}/finish/logs/%x-%A_%a.out\n",
+            f"#SBATCH -e {out_dir}/finish/logs/%x-%A_%a.err\n",
+            "\n",
+            "source ~/.bashrc\n",
+            "set -e\n",
+            f"{CONDA_ENVIRONMENT}\n",
+            f"cd {out_dir}/\n",
             "\n",
             f"finish_qp_pacbio https://test.test.edu/ my-job-id {out_dir}",
         ]
