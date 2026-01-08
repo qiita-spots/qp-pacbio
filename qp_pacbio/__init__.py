@@ -13,7 +13,7 @@ from .qp_pacbio import (
     pacbio_processing,
     syndna_processing,
 )
-from .util import plugin_details
+from .util import get_local_adapter_files, plugin_details
 
 plugin = QiitaPlugin(**plugin_details)
 
@@ -126,6 +126,19 @@ dflt_param_set = {
         "window-size-multi": 3,
     }
 }
+for name in get_local_adapter_files().keys():
+    dflt_param_set[name] = {
+        "adapter": name,
+        "css": False,
+        "min-score": 0,
+        "min-end-score": 0,
+        "min-ref-span": 0.5,
+        "min-scoring-regions": 1,
+        "min-score-lead": 10,
+        "min-length": 50,
+        "window-size-multi": 3,
+    }
+
 
 pacbio_adapter_removal_cmd = QiitaCommand(
     "PacBio adapter removal via lima/pbmarkdup",

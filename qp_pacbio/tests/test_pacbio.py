@@ -392,7 +392,8 @@ class PacAdapterRmTests(PacBioTests):
     def test_pacbio_adapter_removal(self):
         params = {
             "artifact": int(self._insert_data()),
-            "adapter": "AAGCAGTGGTATCAACGCAGAGTACT",
+            # this adapter selection will test all options: file and direct adapter value
+            "adapter": "AAGCAGTGGTATCAACGCAGAGTACT,twist_adapters_231010.fasta.gz",
             "css": False,
             "min-score": 0,
             "min-end-score": 0,
