@@ -48,6 +48,7 @@ dependencies = [
     "woltka@git+https://github.com/qiyunzhu/woltka.git#egg=woltka",
     "pysyndna@git+https://github.com/biocore/pysyndna.git#egg=pysyndna",
     'micov',
+    'scikit-bio',
 ]
 
 [project.scripts]

@@ -8,6 +8,7 @@
 from qiita_client import QiitaCommand, QiitaPlugin
 
 from .qp_pacbio import (
+    feature_table_generation,
     minimap2_processing,
     pacbio_adapter_removal,
     pacbio_processing,
@@ -150,3 +151,37 @@ pacbio_adapter_removal_cmd = QiitaCommand(
     dflt_param_set,
 )
 plugin.register_command(pacbio_adapter_removal_cmd)
+
+#
+# feature table generation
+#
+
+req_params = {
+    "analysis": ("integer", "None"),
+}
+opt_params = {
+    "artifacts": ("mchoice:[]", "[]"),
+    "percent-identity": ("float", "0.995"),
+    "GToTree-c": ("float", "0.4"),
+    "GToTree-G": ("float", "0.4"),
+}
+outputs = {
+    "Merged LCG/MAG feature table": "BIOM",
+}
+dflt_param_set = {
+    "Default": {
+        "percent-identity": 0.995,
+        "GToTree-c": 0.4,
+        "GToTree-G": 0.4,
+    },
+}
+ft_cmd = QiitaCommand(
+    "Feature Table from LCG/MAG",
+    "Feature Table Generation from LCG/MAG",
+    feature_table_generation,
+    req_params,
+    opt_params,
+    outputs,
+    dflt_param_set,
+)
+plugin.register_command(ft_cmd)

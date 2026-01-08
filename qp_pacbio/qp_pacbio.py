@@ -8,10 +8,12 @@
 from glob import glob
 from gzip import open as gopen
 from os import environ, makedirs, mkdir
+from os import environ, makedirs, mkdir, rename
 from os.path import basename, exists, join
 from shutil import copy2
 from subprocess import run
 
+import h5py
 import pandas as pd
 import yaml
 from biom import load_table
@@ -20,6 +22,7 @@ from pysyndna import (
     fit_linear_regression_models_for_qiita,
 )
 from qiita_client import ArtifactInfo
+from skbio.tree import TreeNode
 
 from .util import KISSLoader, find_base_path, get_local_adapter_files
 
@@ -750,3 +753,184 @@ def generate_pacbio_adapter_removal(qclient, job_id, out_dir, parameters, url):
                 fp.write(f"{adapter}\n")
 
     return processing_script, finish_script
+
+
+def feature_table_generation(qclient, job_id, parameters, out_dir):
+    """Merges LCG/MAG and generates feature tables
+
+    Parameters
+    ----------
+    qclient : tgp.qiita_client.QiitaClient
+        Qiita server client.
+    job_id : str
+        Job id.
+    parameters : dict
+        Parameters for this job.
+    out_dir : str
+        Output directory.
+
+    Returns
+    -------
+    bool, list, str
+        Results tuple for Qiita.
+    """
+    qclient.update_job_step(job_id, "Commands finished")
+    ainfo = []
+    errors = []
+
+    required_files = {
+        "biom": f"{out_dir}/remap/counts.biom",
+        "tree": f"{out_dir}/merge/phylogeny/phylogeny.tre",
+        "tax": f"{out_dir}/merge/dereplicated_gtdbtk/classify/gtdbtk.bac120.summary.tsv",
+        "checkm": f"{out_dir}/merge/merged_checkm.txt",
+    }
+    optional_files = [
+        f"{out_dir}/merge/dereplicated_gtdbtk/classify/gtdbtk.ar53.summary.tsv"
+    ]
+
+    for f in required_files.values():
+        if not exists(f):
+            errors.append(f"{f} does not exits.")
+
+    if errors:
+        errors.append("Please contact qiita.help@gmail.com for more information")
+    else:
+        folder = join(out_dir, "finish", "files")
+        makedirs(folder)
+
+        for f in [required_files["tax"], required_files["checkm"]] + optional_files:
+            if exists(f):
+                rename(f, join(folder, basename(f)))
+
+        # filtering missing features from tree
+        tips = [
+            n.name.replace(" ", "_")
+            for n in TreeNode.read(required_files["tree"]).tips()
+        ]
+        biom = load_table(required_files["biom"])
+        biom_filter = biom.filter(ids_to_keep=tips, axis="observation", inplace=False)
+
+        if biom.shape != biom_filter.shape:
+            with h5py.File(required_files["biom"], "w") as out:
+                biom_filter.to_hdf5(out, "fast-merge")
+            removed = set(biom.ids("observation")) - set(tips)
+            with open(f"{folder}/filtered-features.txt", "w") as fp:
+                fp.write("\n".join(removed))
+
+        ainfo = [
+            ArtifactInfo(
+                "Merged LCG/MAG feature table",
+                "BIOM",
+                [
+                    (required_files["biom"], "biom"),
+                    (required_files["tree"], "plain_text"),
+                    (folder, "directory"),
+                ],
+            )
+        ]
+
+    return True, ainfo, "".join(errors)
+
+
+def generate_feature_table_scripts(qclient, job_id, out_dir, parameters, url):
+    """generates feature table from LCG/MAG scripts.
+
+    Parameters
+    ----------
+    qclient : tgp.qiita_client.QiitaClient
+        Qiita server client.
+    job_id : str
+        Job id.
+    out_dir : str
+        Output directory.
+    parameters : dict
+        Parameters for this job.
+    url : str
+        URL to send the respose, finish the job.
+
+    Returns
+    -------
+    str, str
+        Returns the two filepaths of the slurm scripts
+    """
+    resources = RESOURCES["Feature Table from LCG/MAG"]
+    main_parameters = {
+        "conda_environment": CONDA_ENVIRONMENT,
+        "output": out_dir,
+        "qjid": job_id,
+        "url": url,
+    }
+
+    qclient.update_job_step(
+        job_id, "Step 1 of 4: Collecting info and generating submission"
+    )
+
+    njobs = 0
+    for aid in parameters["artifacts"]:
+        # for each artifact we want to get their files, preps and parents file data
+        files, prep = qclient.artifact_and_preparation_files(aid)
+        prep_fp = join(out_dir, f"{aid}_prep_info_artifact.tsv")
+        prep.set_index("sample_name").to_csv(prep_fp, sep="\t")
+
+        with open(join(out_dir, f"{aid}_folders.tsv"), "w") as fp:
+            fp.write("\n".join(files["directory"]))
+
+        for pid in qclient.get("/qiita_db/artifacts/%s/" % aid)["parents"]:
+            files, prep = qclient.artifact_and_preparation_files(pid)
+            lookup = prep.set_index("run_prefix")["sample_name"].to_dict()
+            lines = []
+            for _, (fwd, _) in files.items():
+                fwd_fp = fwd["filepath"]
+                sname = search_by_filename(basename(fwd_fp), lookup)
+                lines.append(f"{sname}\t{fwd_fp}")
+
+            out_fp = join(out_dir, f"{aid}_{pid}_sample_list.txt")
+            with open(out_fp, "w") as f:
+                f.write("\n".join(lines))
+
+            njobs += len(lines)
+
+    qclient.update_job_step(
+        job_id,
+        "Step 2 of 4: Creating submission templates",
+    )
+
+    m2t = JGT("feature_table_merge.sbatch")
+    step_resources = resources["merge"]
+    params = main_parameters | {
+        "job_name": f"m_{job_id}",
+        "node_count": step_resources["node_count"],
+        "nprocs": step_resources["nprocs"],
+        "wall_time_limit": step_resources["wall_time_limit"],
+        "mem_in_gb": step_resources["mem_in_gb"],
+        "percent_identity": parameters["percent-identity"],
+        "GToTree_c": parameters["GToTree-c"],
+        "GToTree_G": parameters["GToTree-G"],
+    }
+    merge_script = _write_slurm(f"{out_dir}/merge", m2t, **params)
+
+    remt = JGT("feature_table_remap.sbatch")
+    step_resources = resources["remap"]
+    params = main_parameters | {
+        "job_name": f"re_{job_id}",
+        "node_count": step_resources["node_count"],
+        "nprocs": step_resources["nprocs"],
+        "wall_time_limit": step_resources["wall_time_limit"],
+        "mem_in_gb": step_resources["mem_in_gb"],
+        "array_params": f"1-{njobs}%{step_resources['max_tasks']}",
+        "percent_identity": parameters["percent-identity"],
+    }
+    remap_script = _write_slurm(f"{out_dir}/remap", remt, **params)
+
+    remt = JGT("feature_table_finish.sbatch")
+    step_resources = resources["finish"]
+    params = main_parameters | {
+        "job_name": f"f_{job_id}",
+        "node_count": step_resources["node_count"],
+        "nprocs": step_resources["nprocs"],
+        "wall_time_limit": step_resources["wall_time_limit"],
+        "mem_in_gb": step_resources["mem_in_gb"],
+    }
+    remt_script = _write_slurm(f"{out_dir}/finish", remt, **params)
+
+    return merge_script, remap_script, remt_script
