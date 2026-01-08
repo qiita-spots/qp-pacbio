@@ -6,6 +6,7 @@
 # The full license is in the file LICENSE, distributed with this software.
 # -----------------------------------------------------------------------------
 from glob import glob
+from gzip import open as gopen
 from os import environ, makedirs, mkdir, rename
 from os.path import basename, exists, join
 from shutil import copy2
@@ -22,7 +23,7 @@ from pysyndna import (
 from qiita_client import ArtifactInfo
 from skbio.tree import TreeNode
 
-from .util import KISSLoader, find_base_path
+from .util import KISSLoader, find_base_path, get_local_adapter_files
 
 JENV = Environment(loader=KISSLoader("data/templates"))
 JGT = JENV.get_template
@@ -739,11 +740,18 @@ def generate_pacbio_adapter_removal(qclient, job_id, out_dir, parameters, url):
     }
     finish_script = _write_slurm(f"{out_dir}/finish", template, **params)
 
+    local_adapters = get_local_adapter_files()
     with open(f"{out_dir}/adapter.fasta", "w") as fp:
-        for i, adapter in enumerate(parameters["adapter"].split(",")):
-            i += 1
-            fp.write(f">adapter_{i}\n")
-            fp.write(f"{adapter}\n")
+        for i, adapter in enumerate(parameters["adapter_sets"].split(",")):
+            if adapter in local_adapters.keys():
+                with gopen(local_adapters[adapter], "rt", encoding="utf-8") as gfp:
+                    fp.write(gfp.read())
+                    # adding new line just in case the adapter file doesn't have it
+                    fp.write("\n")
+            else:
+                i += 1
+                fp.write(f">qp_pacbio_adapter_{adapter}_{i}\n")
+                fp.write(f"{adapter}\n")
 
     return processing_script, finish_script
 
