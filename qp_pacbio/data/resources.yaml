@@ -53,6 +53,14 @@ Woltka v0.1.7 with cov and id filter:
     wall_time_limit: 10:00:00
     mem_in_gb: 60
     max_tasks: 16
+    miint_path: /home/mcdonadt/duckdb-miint/duckdb-2025.12.12
+    databases:
+      WoLr2:
+        reference_db: /scratch/qp-pacbio/minimap2/WoLr2/WoLr2.map-hifi.mmi
+        reference_tax: /scratch/qp-woltka/WoLr2/WoLr2.tax
+        reference_coords: /scratch/qp-woltka/WoLr2/WoLr2.coords
+        reference_len_map: /scratch/qp-woltka/WoLr2/genomes/length.map
+        reference_functional_dir: /scratch/qp-woltka/WoLr2/function/kegg/
   merge:
     node_count: 1
     nprocs: 16

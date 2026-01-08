@@ -392,8 +392,15 @@ def generate_minimap2_processing(qclient, job_id, out_dir, parameters, url):
         "conda_environment": CONDA_ENVIRONMENT,
         "output": out_dir,
         "qjid": job_id,
-        "sql_home": join(BASEPATH, "data/sql/"),
     }
+
+    # retrieving the database specs
+    database = parameters["Database"]
+    if database not in resources["minimap2"]["databases"]:
+        raise ValueError(
+            f"{database} not defined in config file, please report to admins."
+        )
+    main_parameters.update(resources["minimap2"]["databases"][database])
 
     qclient.update_job_step(
         job_id, "Step 1 of 4: Collecting info and generating submission"
@@ -417,8 +424,23 @@ def generate_minimap2_processing(qclient, job_id, out_dir, parameters, url):
         "wall_time_limit": step_resources["wall_time_limit"],
         "mem_in_gb": step_resources["mem_in_gb"],
         "array_params": f"1-{njobs}%{step_resources['max_tasks']}",
+        "miint_path": resources["minimap2"]["miint_path"],
     }
     minimap2_script = _write_slurm(f"{out_dir}/minimap2", m2t, **params)
+
+    sqlt = JGT("woltka_minimap2.sql")
+    params = main_parameters | {
+        "job_name": f"m2_{job_id}",
+        "node_count": step_resources["node_count"],
+        "nprocs": step_resources["nprocs"],
+        "wall_time_limit": step_resources["wall_time_limit"],
+        "mem_in_gb": step_resources["mem_in_gb"],
+        "array_params": f"1-{njobs}%{step_resources['max_tasks']}",
+    }
+    with open(
+        join(out_dir, "qcov-seqident-filter.sql"), mode="w", encoding="utf-8"
+    ) as f:
+        f.write(sqlt.render(**params))
 
     m2mt = JGT("woltka_minimap2_merge.sbatch")
     step_resources = resources["merge"]

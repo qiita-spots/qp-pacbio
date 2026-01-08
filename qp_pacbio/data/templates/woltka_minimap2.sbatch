@@ -14,7 +14,7 @@ set -e
 {{conda_environment}}
 mkdir -p {{output}}/alignment {{output}}/filtered-alignment
 cd {{output}}/
-db=/scratch/qp-pacbio/minimap2/WoLr2/WoLr2.map-hifi.mmi
+db={{reference_db}}
 
 step=${SLURM_ARRAY_TASK_ID}
 input=$(head -n $step {{output}}/sample_list.txt | tail -n 1)
@@ -30,5 +30,5 @@ minimap2 -x map-hifi -t {{nprocs}} -a \
    awk 'BEGIN { FS=OFS="\t" } /^@/ { print; next } { $10="*"; $11="*" } 1' | sort -k 1 | \
    xz -1 -T1 > {{output}}/alignment/${sample_name}.sam.xz
 
-xzcat {{output}}/alignment/${sample_name}.sam.xz | \
-    /home/mcdonadt/duckdb-miint/duckdb-2025.12.12 -f {{sql_home}}/qcov-seqident-filter.sql > {{output}}/filtered-alignment/${sample_name}.sam.gz
+xzcat {{output}}/alignment/${sample_name}.sam.xz | sed '1d' | \
+    {{miint_path}} -f {{output}}/qcov-seqident-filter.sql > {{output}}/filtered-alignment/${sample_name}.sam.gz
