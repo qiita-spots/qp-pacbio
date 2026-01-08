@@ -5,8 +5,8 @@
 #
 # The full license is in the file LICENSE, distributed with this software.
 # -----------------------------------------------------------------------------
-import gzip.open as gopen
 from glob import glob
+from gzip import open as gopen
 from os import environ, makedirs, mkdir
 from os.path import basename, exists, join
 from shutil import copy2
