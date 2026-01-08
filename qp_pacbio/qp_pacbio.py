@@ -750,6 +750,3 @@ def generate_pacbio_adapter_removal(qclient, job_id, out_dir, parameters, url):
                 fp.write(f"{adapter}\n")
 
     return processing_script, finish_script
-
-
-()
