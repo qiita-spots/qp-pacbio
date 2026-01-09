@@ -19,6 +19,7 @@ from qiita_client.testing import PluginTestCase
 from qp_pacbio import plugin
 from qp_pacbio.qp_pacbio import (
     CONDA_ENVIRONMENT,
+    RESOURCES,
     generate_feature_table_scripts,
     generate_minimap2_processing,
     generate_pacbio_adapter_removal,
@@ -161,7 +162,12 @@ class PacProcessingTests(PacBioTests):
 
 class PacWoltkaProfilingTests(PacBioTests):
     def test_pacbio_profiling(self):
-        params = {"artifact": int(self._insert_data())}
+        params = {
+            "artifact": int(self._insert_data()),
+            "Database": "WoLr2",
+            "percent-identity": 0.9,
+            "percent-coverage": 0.9,
+        }
         job_id = "my-job-id"
         out_dir = mkdtemp()
         self._clean_up_files.append(out_dir)
@@ -175,6 +181,30 @@ class PacWoltkaProfilingTests(PacBioTests):
             obs_main = f.readlines()
         with open(merge_fp, "r") as f:
             obs_merge = f.readlines()
+        with open(f"{out_dir}/qcov-seqident-filter.sql", "r") as f:
+            obs_sql = f.readlines()
+
+        resources = RESOURCES["Woltka v0.1.7 with cov and id filter"]
+        reference = resources["minimap2"]["databases"]["WoLr2"]
+        reference_db = reference["reference_db"]
+        reference_tax = reference["reference_tax"]
+        reference_coords = reference["reference_coords"]
+        reference_len_map = reference["reference_len_map"]
+        reference_functional_dir = reference["reference_functional_dir"]
+        miint_path = resources["minimap2"]["miint_path"]
+
+        exp_sql = [
+            "CREATE TEMP TABLE lengths AS\n",
+            "    SELECT *\n",
+            f'        FROM read_csv(\'{reference_len_map}\', header=false, delim=\'\\t\', columns = {{"read_id": "VARCHAR", "length": "BIGINT"}});\n',
+            "\n",
+            "COPY (SELECT *\n",
+            "      FROM read_alignments('/dev/stdin', reference_lengths='lengths')\n",
+            "          where alignment_seq_identity(cigar, tag_nm, tag_md, 'blast') > 0.9\n",
+            "              and alignment_query_coverage(cigar) > 0.9\n",
+            "     ) TO '/dev/stdout' (FORMAT SAM, INCLUDE_HEADER false, COMPRESSION gzip);",
+        ]
+        self.assertEqual(obs_sql, exp_sql)
 
         exp_main = [
             "#!/bin/bash\n",
@@ -191,9 +221,9 @@ class PacWoltkaProfilingTests(PacBioTests):
             "source ~/.bashrc\n",
             "set -e\n",
             f"{CONDA_ENVIRONMENT}\n",
-            f"mkdir -p {out_dir}/alignment\n",
+            f"mkdir -p {out_dir}/alignment {out_dir}/filtered-alignment\n",
             f"cd {out_dir}/\n",
-            "db=/scratch/qp-pacbio/minimap2/WoLr2/WoLr2.map-hifi.mmi\n",
+            f"db={reference_db}\n",
             "\n",
             "step=${SLURM_ARRAY_TASK_ID}\n",
             f"input=$(head -n $step {out_dir}/sample_list.txt | tail -n 1)\n",
@@ -208,11 +238,13 @@ class PacWoltkaProfilingTests(PacBioTests):
             "       ${filename} | \\\n",
             '   awk \'BEGIN { FS=OFS="\\t" } /^@/ { print; next } '
             '{ $10="*"; $11="*" } 1\' | grep -v "^@" | sort -k 1 | \\\n',
-            f"   xz -1 -T1 > {out_dir}/alignment/${{sample_name}}.sam.xz",
+            f"   xz -1 -T1 > {out_dir}/alignment/${{sample_name}}.sam.xz\n",
+            "\n",
+            f"xzcat {out_dir}/alignment/${{sample_name}}.sam.xz | \\\n",
+            f"    {miint_path} -f {out_dir}/qcov-seqident-filter.sql > {out_dir}/filtered-alignment/${{sample_name}}.sam.gz",
         ]
         self.assertEqual(obs_main, exp_main)
 
-        db_path = "/scratch/qp-woltka/WoLr2"
         exp_merge = [
             "#!/bin/bash\n",
             "#SBATCH -J me_my-job-id\n",
@@ -228,14 +260,14 @@ class PacWoltkaProfilingTests(PacBioTests):
             "set -e\n",
             f"{CONDA_ENVIRONMENT}\n",
             f"cd {out_dir}/\n",
-            f"tax={db_path}/WoLr2.tax\n",
-            f"coords={db_path}/WoLr2.coords\n",
-            f"len_map={db_path}/genomes/length.map\n",
-            f"functional_dir={db_path}/function/kegg/\n",
+            f"tax={reference_tax}\n",
+            f"coords={reference_coords}\n",
+            f"len_map={reference_len_map}\n",
+            f"functional_dir={reference_functional_dir}\n",
             "\n",
             f"mkdir -p {out_dir}/coverages/\n",
             "\n",
-            "for f in `ls alignment/*.sam.xz`; do\n",
+            "for f in `ls filtered-alignment/*.sam.gz`; do\n",
             "    sn=`basename ${f/.sam.xz/}`;\n",
             f"    of={out_dir}/bioms/${{sn}};\n",
             "    mkdir -p ${of};\n",

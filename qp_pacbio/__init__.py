@@ -23,7 +23,12 @@ plugin = QiitaPlugin(**plugin_details)
 #
 
 req_params = {"artifact": ("artifact", ["per_sample_FASTQ"])}
-opt_params = {"Database": ['choice:["WoLr2"]', "WoLr2"]}
+opt_params = {
+    # ToDo, fix in the next opportunity: https://github.com/qiita-spots/qp-pacbio/issues/25
+    "percent-identity": ("float", "0.9"),
+    "percent-coverage": ("float", "0.9"),
+    "Database": ['choice:["WoLr2"]', "WoLr2"],
+}
 outputs = {
     # taxonomic
     "Per genome Predictions": "BIOM",
@@ -33,9 +38,15 @@ outputs = {
     "KEGG Enzyme (EC)": "BIOM",
     "KEGG Pathway": "BIOM",
 }
-dflt_param_set = {"WoLr2": {"Database": "WoLr2"}}
+dflt_param_set = {
+    "WoLr2": {
+        "Database": "WoLr2",
+        "percent-identity": 0.9,
+        "percent-coverage": 0.9,
+    },
+}
 minimap2_cmd = QiitaCommand(
-    "Woltka v0.1.7, minimap2",
+    "Woltka v0.1.7 with cov and id filter",
     "Functional and Taxonomic Predictions",
     minimap2_processing,
     req_params,
@@ -165,6 +176,7 @@ req_params = {
 }
 opt_params = {
     "artifacts": ("mchoice:[]", "[]"),
+    # ToDo, fix in the next opportunity: https://github.com/qiita-spots/qp-pacbio/issues/25
     "percent-identity": ("float", "0.995"),
     "GToTree-c": ("float", "0.4"),
     "GToTree-G": ("float", "0.4"),

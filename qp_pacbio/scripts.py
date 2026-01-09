@@ -59,7 +59,7 @@ def execute(url, job_id, output_dir):
         command = job_info["command"]
 
         regular_commands = {
-            "Woltka v0.1.7, minimap2": generate_minimap2_processing,
+            "Woltka v0.1.7 with cov and id filter": generate_minimap2_processing,
             "Remove SynDNA plasmid, insert, & GCF_000184185 reads (minimap2)": generate_syndna_processing,
             "PacBio adapter removal via lima/pbmarkdup": generate_pacbio_adapter_removal,
         }

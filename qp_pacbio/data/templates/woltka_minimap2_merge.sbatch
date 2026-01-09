@@ -12,14 +12,14 @@ source ~/.bashrc
 set -e
 {{conda_environment}}
 cd {{output}}/
-tax=/scratch/qp-woltka/WoLr2/WoLr2.tax
-coords=/scratch/qp-woltka/WoLr2/WoLr2.coords
-len_map=/scratch/qp-woltka/WoLr2/genomes/length.map
-functional_dir=/scratch/qp-woltka/WoLr2/function/kegg/
+tax={{reference_tax}}
+coords={{reference_coords}}
+len_map={{reference_len_map}}
+functional_dir={{reference_functional_dir}}
 
 mkdir -p {{output}}/coverages/
 
-for f in `ls alignment/*.sam.xz`; do
+for f in `ls filtered-alignment/*.sam.gz`; do
     sn=`basename ${f/.sam.xz/}`;
     of={{output}}/bioms/${sn};
     mkdir -p ${of};
