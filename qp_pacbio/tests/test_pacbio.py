@@ -162,7 +162,12 @@ class PacProcessingTests(PacBioTests):
 
 class PacWoltkaProfilingTests(PacBioTests):
     def test_pacbio_profiling(self):
-        params = {"artifact": int(self._insert_data()), "Database": "WoLr2"}
+        params = {
+            "artifact": int(self._insert_data()),
+            "Database": "WoLr2",
+            "identity": 0.9,
+            "coverage": 0.9,
+        }
         job_id = "my-job-id"
         out_dir = mkdtemp()
         self._clean_up_files.append(out_dir)

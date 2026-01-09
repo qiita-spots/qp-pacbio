@@ -439,6 +439,8 @@ def generate_minimap2_processing(qclient, job_id, out_dir, parameters, url):
         "wall_time_limit": step_resources["wall_time_limit"],
         "mem_in_gb": step_resources["mem_in_gb"],
         "array_params": f"1-{njobs}%{step_resources['max_tasks']}",
+        "identity": parameters["identity"],
+        "coverage": parameters["coverage"],
     }
     with open(
         join(out_dir, "qcov-seqident-filter.sql"), mode="w", encoding="utf-8"

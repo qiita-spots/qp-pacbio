@@ -4,6 +4,6 @@ CREATE TEMP TABLE lengths AS
 
 COPY (SELECT *
       FROM read_alignments('/dev/stdin', reference_lengths='lengths')
-          where alignment_seq_identity(cigar, tag_nm, tag_md, 'blast') > 0.9
-              and alignment_query_coverage(cigar) > 0.9
+          where alignment_seq_identity(cigar, tag_nm, tag_md, 'blast') > {{identity}}
+              and alignment_query_coverage(cigar) > {{coverage}}
      ) TO '/dev/stdout' (FORMAT SAM, INCLUDE_HEADER false, COMPRESSION gzip);
