@@ -24,9 +24,9 @@ plugin = QiitaPlugin(**plugin_details)
 
 req_params = {"artifact": ("artifact", ["per_sample_FASTQ"])}
 opt_params = {
+    "percent-identity": ("float", "0.9"),
+    "percent-coverage": ("float", "0.9"),
     "Database": ['choice:["WoLr2"]', "WoLr2"],
-    "identity": ("float", "0.9"),
-    "coverage": ("float", "0.9"),
 }
 outputs = {
     # taxonomic
@@ -38,9 +38,11 @@ outputs = {
     "KEGG Pathway": "BIOM",
 }
 dflt_param_set = {
-    "WoLr2": {"Database": "WoLr2"},
-    "identity": 0.9,
-    "coverage": 0.9,
+    "WoLr2": {
+        "Database": "WoLr2",
+        "percent-identity": 0.9,
+        "percent-coverage": 0.9,
+    },
 }
 minimap2_cmd = QiitaCommand(
     "Woltka v0.1.7 with cov and id filter",

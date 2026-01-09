@@ -165,8 +165,8 @@ class PacWoltkaProfilingTests(PacBioTests):
         params = {
             "artifact": int(self._insert_data()),
             "Database": "WoLr2",
-            "identity": 0.9,
-            "coverage": 0.9,
+            "percent-identity": 0.9,
+            "percent-coverage": 0.9,
         }
         job_id = "my-job-id"
         out_dir = mkdtemp()
