@@ -197,7 +197,7 @@ class PacWoltkaProfilingTests(PacBioTests):
             "      FROM read_alignments('/dev/stdin', reference_lengths='lengths')\n",
             "          where alignment_seq_identity(cigar, tag_nm, tag_md, 'blast') > 0.9\n",
             "              and alignment_query_coverage(cigar) > 0.9\n",
-            "     ) TO '/dev/stdout' (FORMAT SAM, INCLUDE_HEADER false);",
+            "     ) TO '/dev/stdout' (FORMAT SAM, INCLUDE_HEADER false, COMPRESSION gzip);",
         ]
         self.assertEqual(obs_sql, exp_sql)
 
@@ -262,7 +262,7 @@ class PacWoltkaProfilingTests(PacBioTests):
             "\n",
             f"mkdir -p {out_dir}/coverages/\n",
             "\n",
-            "for f in `ls filtered-alignment/*.sam.xz`; do\n",
+            "for f in `ls filtered-alignment/*.sam.gz`; do\n",
             "    sn=`basename ${f/.sam.xz/}`;\n",
             f"    of={out_dir}/bioms/${{sn}};\n",
             "    mkdir -p ${of};\n",

@@ -19,7 +19,7 @@ functional_dir={{reference_functional_dir}}
 
 mkdir -p {{output}}/coverages/
 
-for f in `ls filtered-alignment/*.sam.xz`; do
+for f in `ls filtered-alignment/*.sam.gz`; do
     sn=`basename ${f/.sam.xz/}`;
     of={{output}}/bioms/${sn};
     mkdir -p ${of};
