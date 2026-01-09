@@ -14,6 +14,8 @@ Qiita plugin to process PacBio reads; it currently provides 2 commands for Qiita
   * **[sample-name].fna.gz**: the no LCG reads used for MAG generation
   * **[sample-name].checkm.txt.gz**: MAG quality information from CheckM v1.2.3
 
+* **Remove SynDNA plasmid, insert, & GCF_000184185 reads (minimap2)**: removes technical reads and calculates SynDNA content.
+
 * **PacBio adapter removal via lima/pbmarkdup**: removes adapters via lima/pbmarkdup from per-sample-FASTQ artifacts. We currently have 2 adapter_sets:
 
   * 'AAGCAGTGGTATCAACGCAGAGTACT'

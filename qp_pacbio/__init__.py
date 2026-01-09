@@ -25,8 +25,8 @@ plugin = QiitaPlugin(**plugin_details)
 req_params = {"artifact": ("artifact", ["per_sample_FASTQ"])}
 opt_params = {
     "Database": ['choice:["WoLr2"]', "WoLr2"],
-    "identity": (float, "0.9"),
-    "coverage": (float, "0.9"),
+    "identity": ("float", "0.9"),
+    "coverage": ("float", "0.9"),
 }
 outputs = {
     # taxonomic
