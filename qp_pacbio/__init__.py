@@ -39,8 +39,8 @@ outputs = {
 }
 dflt_param_set = {
     "WoLr2": {"Database": "WoLr2"},
-    "identity": 0.9,
-    "coverage": 0.9,
+    "identity": "0.9",
+    "coverage": "0.9",
 }
 minimap2_cmd = QiitaCommand(
     "Woltka v0.1.7 with cov and id filter",
