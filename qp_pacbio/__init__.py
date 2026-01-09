@@ -24,6 +24,7 @@ plugin = QiitaPlugin(**plugin_details)
 
 req_params = {"artifact": ("artifact", ["per_sample_FASTQ"])}
 opt_params = {
+    # ToDo, fix in the next opportunity: https://github.com/qiita-spots/qp-pacbio/issues/25
     "percent-identity": ("float", "0.9"),
     "percent-coverage": ("float", "0.9"),
     "Database": ['choice:["WoLr2"]', "WoLr2"],
@@ -175,6 +176,7 @@ req_params = {
 }
 opt_params = {
     "artifacts": ("mchoice:[]", "[]"),
+    # ToDo, fix in the next opportunity: https://github.com/qiita-spots/qp-pacbio/issues/25
     "percent-identity": ("float", "0.995"),
     "GToTree-c": ("float", "0.4"),
     "GToTree-G": ("float", "0.4"),
