@@ -20,6 +20,9 @@ functional_dir={{reference_functional_dir}}
 mkdir -p {{output}}/coverages/
 
 for f in `ls filtered-alignment/*.sam.gz`; do
+    if [[ $(gunzip -c "$f" | head -c1 | wc -c) == "0" ]]; then
+        continue
+    fi
     sn=`basename ${f/.sam.xz/}`;
     of={{output}}/bioms/${sn};
     mkdir -p ${of};
