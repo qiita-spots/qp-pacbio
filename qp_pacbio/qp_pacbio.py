@@ -743,9 +743,10 @@ def generate_pacbio_adapter_removal(qclient, job_id, out_dir, parameters, url):
     #     }:
     #         lima_cmd += f" --{k} {v}"
     if parameters.get("adapter_sets") == "twist_adapters_231010.fasta.gz":
-        # twist adapter
+        # twist PacBio adapter
         lima_cmd = f'lima "${{filename}}" {out_dir}/adapter.fasta "${{fout}}.fastq.gz" --hifi-preset ASYMMETRIC --neighbors --peek-guess'
     else:
+        # old PacBio adapter
         lima_cmd = f'lima "${{filename}}" {out_dir}/adapter.fasta "${{fout}}.fastq.gz" --hifi-preset SYMMETRIC --peek-guess'
 
     template = JGT("pacbio_adapter.sbatch")
