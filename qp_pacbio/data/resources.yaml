@@ -2,7 +2,7 @@ PacBio processing:
   step-1:
     node_count: 1
     nprocs: 16
-    wall_time_limit: 1-00:00:00
+    wall_time_limit: 2-00:00:00
     mem_in_gb: 200
     max_tasks: 16
   step-2:
@@ -21,7 +21,7 @@ PacBio processing:
     node_count: 1
     nprocs: 8
     wall_time_limit: 01:00:00
-    mem_in_gb: 6
+    mem_in_gb: 12
     max_tasks: 16
   step-5:
     node_count: 1
