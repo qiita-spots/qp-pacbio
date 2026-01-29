@@ -37,7 +37,7 @@ STEP_1_EXP = (
     f"#SBATCH -p qiita\n"
     f"#SBATCH -N 1\n"
     f"#SBATCH -n 16\n"
-    f"#SBATCH --time 1-00:00:00\n"
+    f"#SBATCH --time 2-00:00:00\n"
     f"#SBATCH --mem 200G\n"
     "#SBATCH -o {out_dir}/step-1/logs/%x-%A_%a.out\n"
     "#SBATCH -e {out_dir}/step-1/logs/%x-%A_%a.err\n"
@@ -502,7 +502,7 @@ class PacAdapterRmTests(PacBioTests):
             'counts=$(cut -f "${column}" "${fout}.lima.counts" | tail -n 1)\n',
             "\n",
             'if [[ "$counts" -gt "0" ]]; then\n',
-            '    pbmarkdup "${fout}.fastq.gz" "${final}.fastq"\n',
+            '    pbmarkdup --rmdup "${fout}.fastq.gz" "${final}.fastq"\n',
             "fi\n",
             "\n",
             f"touch {out_dir}/completed_${{SLURM_ARRAY_TASK_ID}}.log",

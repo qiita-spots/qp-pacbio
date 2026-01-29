@@ -727,19 +727,26 @@ def generate_pacbio_adapter_removal(qclient, job_id, out_dir, parameters, url):
     )
 
     lima_cmd = f'lima "${{filename}}" {out_dir}/adapter.fasta "${{fout}}.fastq.gz" --hifi-preset SYMMETRIC --peek-guess'
-    if parameters["css"] and parameters["css"] != "False":
-        lima_cmd += " --css"
-    for k, v in parameters.items():
-        if k in {
-            "min-score",
-            "min-end-score",
-            "min-ref-span",
-            "min-scoring-regions",
-            "min-score-lead",
-            "min-length",
-            "window-size-multi",
-        }:
-            lima_cmd += f" --{k} {v}"
+    # Note, this changes were done as a quick solution, leaving as is so we have it as a reference
+    #       but we want to change in the future
+    # if parameters["css"] and parameters["css"] != "False":
+    #     lima_cmd += " --css"
+    # for k, v in parameters.items():
+    #     if k in {
+    #         "min-score",
+    #         "min-end-score",
+    #         "min-ref-span",
+    #         "min-scoring-regions",
+    #         "min-score-lead",
+    #         "min-length",
+    #         "window-size-multi",
+    #     }:
+    #         lima_cmd += f" --{k} {v}"
+    if parameters.get("adapter_sets") == "twist_adapters_231010.fasta.gz":
+        # twist adapter
+        lima_cmd = f'lima "${{filename}}" {out_dir}/adapter.fasta "${{fout}}.fastq.gz" --hifi-preset ASYMMETRIC --neighbors --peek-guess'
+    else:
+        lima_cmd = f'lima "${{filename}}" {out_dir}/adapter.fasta "${{fout}}.fastq.gz" --hifi-preset SYMMETRIC --peek-guess'
 
     template = JGT("pacbio_adapter.sbatch")
     step_resources = resources["processing"]

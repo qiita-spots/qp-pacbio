@@ -21,7 +21,7 @@ from qiita_db.user import User
     "--command-id",
     help="the feature table generation command id",
     required=False,
-    default=850,
+    default=855,
 )
 def main(aid, user_email, command_id):
     user = User(user_email)

@@ -44,7 +44,7 @@ counts=$(cut -f "${column}" "${fout}.lima.counts" | tail -n 1)
 
 # if not zero, then run the next command, else copy input - note that in theory this should never happen
 if [[ "$counts" -gt "0" ]]; then
-    pbmarkdup "${fout}.fastq.gz" "${final}.fastq"
+    pbmarkdup --rmdup "${fout}.fastq.gz" "${final}.fastq"
 fi
 
 touch {{output}}/completed_${SLURM_ARRAY_TASK_ID}.log
