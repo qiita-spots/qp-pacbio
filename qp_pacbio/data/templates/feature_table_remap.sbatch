@@ -21,11 +21,11 @@ aid=`echo $input | awk '{print $3}'`
 fn=`basename ${filename}`
 
 out_folder={{output}}/remap
-sn_folder=${out_folder}/bioms/${aid}_${sample_name}
+sn_folder=${out_folder}/bioms/${aid}.${sample_name}
 export TMPDIR=${out_folder}/tmp
 mkdir -p ${TMPDIR} ${sn_folder}
 
-txt=${sn_folder}/${sample_name}.txt
+txt=${sn_folder}/${aid}.${sample_name}.txt
 tsv=${txt/.txt/.tsv}
 coverm genome -d {{output}}/merge/dereplicated -x fna --mapper minimap2-hifi -m covered_bases trimmed_mean mean length count \
     --trim-min 0.05 --trim-max 0.95 --min-read-percent-identity {{percent_identity}} \
@@ -33,8 +33,13 @@ coverm genome -d {{output}}/merge/dereplicated -x fna --mapper minimap2-hifi -m 
     --single ${filename} --output-file ${txt}
 
 awk 'BEGIN {FS=OFS="\t"}; {print $1,$NF}' ${txt} | \
-    sed 's/Contig/\#OTU ID/' | sed  's/dereplicated_gtdbtk\///' | \
-    sed  's/ Read Count//' | sed "s/${fn}/${sample_name}/" > ${tsv}
+    sed  's/dereplicated_gtdbtk\///' | \
+    sed  's/ Read Count//' | sed "s/${fn}/${aid}.${sample_name}/" > ${tsv}
+
+# saving coverages
+cov_tsv=${txt/.txt/.cov}
+echo -e "mag_id\tcovered\tlength\tpercent_covered" > ${cov_tsv}
+tail -n +2 ${txt} | awk -F'\t' 'BEGIN {FS=OFS="\t"}; { if ($5 > 0) print $1,$2,$5,$2/$5 }' >> ${cov_tsv}
 
 # if counts is zero do not try to convert
 counts=`tail -n +2 ${tsv} | awk '{sum += $NF} END {print sum}'`

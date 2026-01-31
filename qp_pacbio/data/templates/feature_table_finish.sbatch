@@ -15,6 +15,10 @@ cd {{output}}/
 
 python -c "from qp_pacbio.util import client_connect; qclient = client_connect('{{url}}'); qclient.update_job_step('{{qjid}}', 'Merging BIOMs')"
 
+mkdir -p coverages
+cp */bioms/*/*.cov coverages
+tar czvf coverages.tgz coverages
+
 biom_merge_pacbio --base {{output}}/remap --merge-type counts
 
 finish_qp_pacbio {{url}} {{qjid}} {{output}}

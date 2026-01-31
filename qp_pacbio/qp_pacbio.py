@@ -814,13 +814,18 @@ def feature_table_generation(qclient, job_id, parameters, out_dir):
     errors = []
 
     required_files = {
-        "biom": f"{out_dir}/remap/counts.biom",
-        "tree": f"{out_dir}/merge/phylogeny/phylogeny.tre",
-        "tax": f"{out_dir}/merge/dereplicated_gtdbtk/classify/gtdbtk.bac120.summary.tsv",
-        "checkm": f"{out_dir}/merge/merged_checkm.txt",
+        # key: (filepath, method)
+        "biom": (f"{out_dir}/remap/counts.biom", rename),
+        "tree": (f"{out_dir}/merge/phylogeny/phylogeny.tre", copy2),
+        "tax": (
+            f"{out_dir}/merge/dereplicated_gtdbtk/classify/gtdbtk.bac120.summary.tsv",
+            copy2,
+        ),
+        "checkm": (f"{out_dir}/merge/merged_checkm.txt", copy2),
+        "coverages": (f"{out_dir}/coverages.tgz", rename),
     }
     optional_files = [
-        f"{out_dir}/merge/dereplicated_gtdbtk/classify/gtdbtk.ar53.summary.tsv"
+        (f"{out_dir}/merge/dereplicated_gtdbtk/classify/gtdbtk.ar53.summary.tsv", copy2)
     ]
 
     for f in required_files.values():
@@ -833,9 +838,12 @@ def feature_table_generation(qclient, job_id, parameters, out_dir):
         folder = join(out_dir, "finish", "files")
         makedirs(folder)
 
-        for f in [required_files["tax"], required_files["checkm"]] + optional_files:
+        for f, method in [
+            required_files["tax"],
+            required_files["checkm"],
+        ] + optional_files:
             if exists(f):
-                rename(f, join(folder, basename(f)))
+                method(f, join(folder, basename(f)))
 
         # filtering missing features from tree
         tips = [

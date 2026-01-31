@@ -15,10 +15,4 @@ cd {{output}}/
 
 biom_merge_pacbio --base {{output}}/syndna --merge-type syndna
 
-# find {{output}}/coverages/ -iname "*.cov" > {{output}}/cov_files.txt
-# micov consolidate --paths {{output}}/cov_files.txt --lengths ${len_map} --output {{output}}/coverages.tgz
-
-# cd alignment
-# tar -cvf ../alignment.tar *.sam.xz
-
 finish_qp_pacbio {{url}} {{qjid}} {{output}}
