@@ -364,7 +364,7 @@ class PacWoltkaSynDNATests(PacBioTests):
             "\n",
             "mkdir -p ${out_folder}/filtered/\n",
             "\n",
-            "sn_folder=${out_folder}/bioms/${aid}.${sample_name}\n",
+            "sn_folder=${out_folder}/bioms/${sample_name}\n",
             "mkdir -p ${sn_folder}\n",
             "\n",
             "txt=${sn_folder}/${sample_name}.txt\n",
