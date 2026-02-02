@@ -16,7 +16,7 @@ Qiita plugin to process PacBio reads; it currently provides 2 commands for Qiita
 
 * **Remove SynDNA plasmid, insert, & GCF_000184185 reads (minimap2)**: removes technical reads and calculates SynDNA content.
 
-* **PacBio adapter removal via lima/pbmarkdup**: removes adapters via lima/pbmarkdup from per-sample-FASTQ artifacts. We currently have 2 adapter_sets:
+* **Adapter removal via lima/pbmarkdup v2.13**: removes adapters via lima/pbmarkdup from per-sample-FASTQ artifacts. We currently have 2 adapter_sets:
 
   * 'AAGCAGTGGTATCAACGCAGAGTACT'
   * 'twist_adapters_231010.fasta.gz', downloaded from `PacBio <https://www.pacb.com/wp-content/uploads/Twist_Universal_Adapters_10bp_UDI_for_PacBio_10Oct2023.fasta_.zip>`__
@@ -32,8 +32,9 @@ Qiita plugin to process PacBio reads; it currently provides 2 commands for Qiita
 
 **[DEPRECATED commands]**
 
-* **Woltka v0.1.7, minimap2**: which generates feature and functional profiles agains WoLr2;
-    the expected output are BIOM artifacts
+* **Woltka v0.1.7, minimap2**: replaced by "Woltka v0.1.7, with cov and id filter"
+
+* **PacBio adapter removal via lima/pbmarkdup**: replaced by "Adapter removal via lima/pbmarkdup v2.13"
 
 
 .. |Build Status| image:: https://github.com/qiita-spots/qp-pacbio/actions/workflows/qiita-plugin-ci.yml/badge.svg

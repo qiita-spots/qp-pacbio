@@ -14,7 +14,7 @@ from .qp_pacbio import (
     pacbio_processing,
     syndna_processing,
 )
-from .util import get_local_adapter_files, plugin_details
+from .util import plugin_details
 
 plugin = QiitaPlugin(**plugin_details)
 
@@ -116,15 +116,10 @@ opt_params = {
     # - a comma-separated list of sequences to filter
     # - a comma-separated list of filenames to use; these should live in qp_pacbio/data/adapters/
     # the code will "merge" all these options
-    "adapter_sets": ("string", "AAGCAGTGGTATCAACGCAGAGTACT"),
-    "css": ("boolean", "False"),
-    "min-score": ("integer", "0"),
-    "min-end-score": ("integer", "0"),
-    "min-ref-span": ("float", "0.5"),
-    "min-scoring-regions": ("integer", "1"),
-    "min-score-lead": ("integer", "10"),
-    "min-length": ("integer", "50"),
-    "window-size-multi": ("float", "3"),
+    "adapter_sets": ("string", ""),
+    "neighbors": ("boolean", "False"),
+    "peek-guess": ("boolean", "False"),
+    "hifi-preset": ('choice: ["SYMMETRIC", "ASYMMETRIC"]', "ASYMMETRIC"),
 }
 outputs = {
     "no adapter reads": "per_sample_FASTQ",
@@ -132,32 +127,20 @@ outputs = {
 dflt_param_set = {
     "PacBio adapter": {
         "adapter_sets": "AAGCAGTGGTATCAACGCAGAGTACT",
-        "css": False,
-        "min-score": 0,
-        "min-end-score": 0,
-        "min-ref-span": 0.5,
-        "min-scoring-regions": 1,
-        "min-score-lead": 10,
-        "min-length": 50,
-        "window-size-multi": 3,
-    }
+        "neighbors": False,
+        "peek-guess": True,
+        "hifi-preset": "ASYMMETRIC",
+    },
+    "PacBio twist adapter": {
+        "adapter_sets": "twist_adapters_231010.fasta.gz",
+        "neighbors": True,
+        "peek-guess": True,
+        "hifi-preset": "SYMMETRIC",
+    },
 }
-for name in get_local_adapter_files().keys():
-    dflt_param_set[name] = {
-        "adapter_sets": name,
-        "css": False,
-        "min-score": 0,
-        "min-end-score": 0,
-        "min-ref-span": 0.5,
-        "min-scoring-regions": 1,
-        "min-score-lead": 10,
-        "min-length": 50,
-        "window-size-multi": 3,
-    }
-
 
 pacbio_adapter_removal_cmd = QiitaCommand(
-    "PacBio adapter removal via lima/pbmarkdup",
+    "Adapter removal via lima/pbmarkdup v2.13",
     "Remove adapter reads using lima/pbmarkdup",
     pacbio_adapter_removal,
     req_params,
