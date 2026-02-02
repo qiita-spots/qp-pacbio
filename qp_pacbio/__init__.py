@@ -129,13 +129,13 @@ dflt_param_set = {
         "adapter_sets": "AAGCAGTGGTATCAACGCAGAGTACT",
         "neighbors": False,
         "peek-guess": True,
-        "hifi-preset": "ASYMMETRIC",
+        "hifi-preset": "SYMMETRIC",
     },
     "PacBio twist adapter": {
         "adapter_sets": "twist_adapters_231010.fasta.gz",
         "neighbors": True,
         "peek-guess": True,
-        "hifi-preset": "SYMMETRIC",
+        "hifi-preset": "ASYMMETRIC",
     },
 }
 
