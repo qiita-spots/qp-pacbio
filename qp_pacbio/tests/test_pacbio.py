@@ -432,14 +432,8 @@ class PacAdapterRmTests(PacBioTests):
             "artifact": int(self._insert_data()),
             # this adapter selection will test all options: file and direct adapter value
             "adapter_sets": "AAGCAGTGGTATCAACGCAGAGTACT,twist_adapters_231010.fasta.gz",
-            "css": False,
-            "min-score": 0,
-            "min-end-score": 0,
-            "min-ref-span": 0,
-            "min-scoring-regions": 0,
-            "min-score-lead": 0,
-            "min-length": 0,
-            "window-size-mult": 3,
+            "hifi-preset": "SYMMETRIC",
+            "peek-guess": True,
         }
         job_id = "my-job-id"
         out_dir = mkdtemp()

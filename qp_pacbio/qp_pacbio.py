@@ -706,7 +706,7 @@ def generate_pacbio_adapter_removal(qclient, job_id, out_dir, parameters, url):
     str, str
         Returns the two filepaths of the slurm scripts
     """
-    resources = RESOURCES["PacBio adapter removal via lima/pbmarkdup"]
+    resources = RESOURCES["Adapter removal via lima/pbmarkdup v2.13"]
     main_parameters = {
         "conda_environment": CONDA_ENVIRONMENT,
         "output": out_dir,
@@ -726,28 +726,12 @@ def generate_pacbio_adapter_removal(qclient, job_id, out_dir, parameters, url):
         "Step 2 of 4: Creating submission templates",
     )
 
-    lima_cmd = f'lima "${{filename}}" {out_dir}/adapter.fasta "${{fout}}.fastq.gz" --hifi-preset SYMMETRIC --peek-guess'
-    # Note, this changes were done as a quick solution, leaving as is so we have it as a reference
-    #       but we want to change in the future
-    # if parameters["css"] and parameters["css"] != "False":
-    #     lima_cmd += " --css"
-    # for k, v in parameters.items():
-    #     if k in {
-    #         "min-score",
-    #         "min-end-score",
-    #         "min-ref-span",
-    #         "min-scoring-regions",
-    #         "min-score-lead",
-    #         "min-length",
-    #         "window-size-multi",
-    #     }:
-    #         lima_cmd += f" --{k} {v}"
-    if parameters.get("adapter_sets") == "twist_adapters_231010.fasta.gz":
-        # twist PacBio adapter
-        lima_cmd = f'lima "${{filename}}" {out_dir}/adapter.fasta "${{fout}}.fastq.gz" --hifi-preset ASYMMETRIC --neighbors --peek-guess'
-    else:
-        # old PacBio adapter
-        lima_cmd = f'lima "${{filename}}" {out_dir}/adapter.fasta "${{fout}}.fastq.gz" --hifi-preset SYMMETRIC --peek-guess'
+    hp = parameters.get("hifi-preset")
+    lima_cmd = f'lima "${{filename}}" {out_dir}/adapter.fasta "${{fout}}.fastq.gz" --hifi-preset {hp}'
+    for k in {"neighbors", "peek-guess"}:
+        v = parameters.get(k)
+        if v in {True, "True"}:
+            lima_cmd += f" --{k}"
 
     template = JGT("pacbio_adapter.sbatch")
     step_resources = resources["processing"]

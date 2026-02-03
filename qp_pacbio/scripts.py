@@ -61,7 +61,7 @@ def execute(url, job_id, output_dir):
         regular_commands = {
             "Woltka v0.1.7 with cov and id filter": generate_minimap2_processing,
             "Remove SynDNA plasmid, insert, & GCF_000184185 reads (minimap2)": generate_syndna_processing,
-            "PacBio adapter removal via lima/pbmarkdup": generate_pacbio_adapter_removal,
+            "Adapter removal via lima/pbmarkdup v2.13": generate_pacbio_adapter_removal,
         }
 
         if command in regular_commands.keys():

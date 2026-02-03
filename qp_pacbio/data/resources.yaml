@@ -78,7 +78,7 @@ Remove SynDNA plasmid, insert, & GCF_000184185 reads (minimap2):
     nprocs: 1
     wall_time_limit: 4:00:00
     mem_in_gb: 4
-PacBio adapter removal via lima/pbmarkdup:
+Adapter removal via lima/pbmarkdup v2.13:
   processing:
     node_count: 1
     nprocs: 1
