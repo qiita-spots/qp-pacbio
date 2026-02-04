@@ -798,16 +798,22 @@ def feature_table_generation(qclient, job_id, parameters, out_dir):
     errors = []
 
     required_files = {
-        "biom": f"{out_dir}/remap/counts.biom",
-        "tree": f"{out_dir}/merge/phylogeny/phylogeny.tre",
-        "tax": f"{out_dir}/merge/dereplicated_gtdbtk/classify/gtdbtk.bac120.summary.tsv",
-        "checkm": f"{out_dir}/merge/merged_checkm.txt",
+        # key: (filepath, method)
+        "biom": (f"{out_dir}/remap/counts.biom", rename),
+        "tree": (f"{out_dir}/merge/phylogeny/phylogeny.tre", copy2),
+        "tax": (
+            f"{out_dir}/merge/dereplicated_gtdbtk/classify/gtdbtk.bac120.summary.tsv",
+            copy2,
+        ),
+        "checkm": (f"{out_dir}/merge/merged_checkm.txt", copy2),
+        "coverages": (f"{out_dir}/coverages.tgz", rename),
+        "length.map": (f"{out_dir}/length.map", rename),
     }
     optional_files = [
-        f"{out_dir}/merge/dereplicated_gtdbtk/classify/gtdbtk.ar53.summary.tsv"
+        (f"{out_dir}/merge/dereplicated_gtdbtk/classify/gtdbtk.ar53.summary.tsv", copy2)
     ]
 
-    for f in required_files.values():
+    for f, _ in required_files.values():
         if not exists(f):
             errors.append(f"{f} does not exits.")
 
@@ -817,20 +823,24 @@ def feature_table_generation(qclient, job_id, parameters, out_dir):
         folder = join(out_dir, "finish", "files")
         makedirs(folder)
 
-        for f in [required_files["tax"], required_files["checkm"]] + optional_files:
+        for element in ("tax", "checkm", "coverages", "length.map"):
+            f, method = required_files[element]
+            method(f, join(folder, basename(f)))
+        for f, method in optional_files:
             if exists(f):
-                rename(f, join(folder, basename(f)))
+                method(f, join(folder, basename(f)))
+
+        # [0] is the filepath
+        treefp = required_files["tree"][0]
+        biomfp = required_files["biom"][0]
 
         # filtering missing features from tree
-        tips = [
-            n.name.replace(" ", "_")
-            for n in TreeNode.read(required_files["tree"]).tips()
-        ]
-        biom = load_table(required_files["biom"])
+        tips = [n.name.replace(" ", "_") for n in TreeNode.read(treefp).tips()]
+        biom = load_table(biomfp)
         biom_filter = biom.filter(ids_to_keep=tips, axis="observation", inplace=False)
 
         if biom.shape != biom_filter.shape:
-            with h5py.File(required_files["biom"], "w") as out:
+            with h5py.File(biomfp, "w") as out:
                 biom_filter.to_hdf5(out, "fast-merge")
             removed = set(biom.ids("observation")) - set(tips)
             with open(f"{folder}/filtered-features.txt", "w") as fp:
@@ -841,8 +851,8 @@ def feature_table_generation(qclient, job_id, parameters, out_dir):
                 "Merged LCG/MAG feature table",
                 "BIOM",
                 [
-                    (required_files["biom"], "biom"),
-                    (required_files["tree"], "plain_text"),
+                    (biomfp, "biom"),
+                    (treefp, "plain_text"),
                     (folder, "directory"),
                 ],
             )

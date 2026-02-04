@@ -32,7 +32,7 @@ def main(aid, user_email, command_id):
     analysis = Analysis.create(user, command.name, "")
     samples = {a.id: list(a.prep_templates[0]) for a in artifacts}
     analysis.add_samples(samples, True)
-    analysis._build_mapping_file(samples, rename_dup_samples=False)
+    analysis._build_mapping_file(samples, rename_dup_samples=True)
 
     params = {
         "analysis": analysis.id,
