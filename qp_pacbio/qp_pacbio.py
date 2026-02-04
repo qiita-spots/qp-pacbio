@@ -840,7 +840,7 @@ def feature_table_generation(qclient, job_id, parameters, out_dir):
         biom_filter = biom.filter(ids_to_keep=tips, axis="observation", inplace=False)
 
         if biom.shape != biom_filter.shape:
-            with h5py.File(biom, "w") as out:
+            with h5py.File(biomfp, "w") as out:
                 biom_filter.to_hdf5(out, "fast-merge")
             removed = set(biom.ids("observation")) - set(tips)
             with open(f"{folder}/filtered-features.txt", "w") as fp:
