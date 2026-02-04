@@ -823,10 +823,10 @@ def feature_table_generation(qclient, job_id, parameters, out_dir):
         folder = join(out_dir, "finish", "files")
         makedirs(folder)
 
-        for f, method in [
-            required_files["tax"],
-            required_files["checkm"],
-        ] + optional_files:
+        for element in ("tax", "checkm", "coverages", "length.map"):
+            f, method = required_files[element]
+            method(f, join(folder, basename(f)))
+        for f, method in optional_files:
             if exists(f):
                 method(f, join(folder, basename(f)))
 
