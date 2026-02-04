@@ -17,7 +17,7 @@ python -c "from qp_pacbio.util import client_connect; qclient = client_connect('
 
 lmap=${PWD}/length.map
 ls ${PWD}/*/bioms/*/*.cov > ${PWD}/cov_files.txt
-seqkit stats dereplicated/*.fna | tail -n +2 | awk 'BEGIN{OFS="\t"} {print $1, $5}' | sed 's/,//g' | sed 's#dereplicated/##g' | sed 's/.fna//g' > ${lmap}
+seqkit stats merge/dereplicated/*.fna | tail -n +2 | awk 'BEGIN{OFS="\t"} {print $1, $5}' | sed 's/,//g' | sed 's#merge/dereplicated/##g' | sed 's/.fna//g' > ${lmap}
 micov consolidate --paths ${PWD}/cov_files.txt --lengths ${lmap} --output ${PWD}/coverages.tgz
 
 biom_merge_pacbio --base {{output}}/remap --merge-type counts

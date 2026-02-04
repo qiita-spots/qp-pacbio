@@ -812,7 +812,7 @@ class PacBioFeatureTableTests(PacBioTests):
             "\n",
             "lmap=${PWD}/length.map\n",
             "ls ${PWD}/*/bioms/*/*.cov > ${PWD}/cov_files.txt\n",
-            "seqkit stats dereplicated/*.fna | tail -n +2 | awk 'BEGIN{OFS=\"\\t\"} {print $1, $5}' | sed 's/,//g' | sed 's#dereplicated/##g' | sed 's/.fna//g' > ${lmap}\n",
+            "seqkit stats merge/dereplicated/*.fna | tail -n +2 | awk 'BEGIN{OFS=\"\\t\"} {print $1, $5}' | sed 's/,//g' | sed 's#merge/dereplicated/##g' | sed 's/.fna//g' > ${lmap}\n",
             "micov consolidate --paths ${PWD}/cov_files.txt --lengths ${lmap} --output ${PWD}/coverages.tgz\n",
             "\n",
             f"biom_merge_pacbio --base {out_dir}/remap --merge-type counts\n",
