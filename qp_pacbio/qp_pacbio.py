@@ -813,7 +813,7 @@ def feature_table_generation(qclient, job_id, parameters, out_dir):
         (f"{out_dir}/merge/dereplicated_gtdbtk/classify/gtdbtk.ar53.summary.tsv", copy2)
     ]
 
-    for f in required_files.values():
+    for f, _ in required_files.values():
         if not exists(f):
             errors.append(f"{f} does not exits.")
 
