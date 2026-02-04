@@ -833,13 +833,13 @@ def feature_table_generation(qclient, job_id, parameters, out_dir):
         # filtering missing features from tree
         tips = [
             n.name.replace(" ", "_")
-            for n in TreeNode.read(required_files["tree"]).tips()
+            for n in TreeNode.read(required_files["tree"][0]).tips()
         ]
         biom = load_table(required_files["biom"])
         biom_filter = biom.filter(ids_to_keep=tips, axis="observation", inplace=False)
 
         if biom.shape != biom_filter.shape:
-            with h5py.File(required_files["biom"], "w") as out:
+            with h5py.File(required_files["biom"][0], "w") as out:
                 biom_filter.to_hdf5(out, "fast-merge")
             removed = set(biom.ids("observation")) - set(tips)
             with open(f"{folder}/filtered-features.txt", "w") as fp:
@@ -850,8 +850,8 @@ def feature_table_generation(qclient, job_id, parameters, out_dir):
                 "Merged LCG/MAG feature table",
                 "BIOM",
                 [
-                    (required_files["biom"], "biom"),
-                    (required_files["tree"], "plain_text"),
+                    (required_files["biom"][0], "biom"),
+                    (required_files["tree"][0], "plain_text"),
                     (folder, "directory"),
                 ],
             )
