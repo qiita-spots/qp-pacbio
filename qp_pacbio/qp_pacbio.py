@@ -807,6 +807,7 @@ def feature_table_generation(qclient, job_id, parameters, out_dir):
         ),
         "checkm": (f"{out_dir}/merge/merged_checkm.txt", copy2),
         "coverages": (f"{out_dir}/coverages.tgz", rename),
+        "length.map": (f"{out_dir}/length.map", rename),
     }
     optional_files = [
         (f"{out_dir}/merge/dereplicated_gtdbtk/classify/gtdbtk.ar53.summary.tsv", copy2)
