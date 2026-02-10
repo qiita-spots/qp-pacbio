@@ -38,7 +38,7 @@ awk 'BEGIN {FS=OFS="\t"}; {print $1,$NF}' ${txt} | \
 
 # saving coverages
 cov_tsv=${txt/.txt/.cov.tsv}
-echo -e "mag_id\tpercent_covered" > ${cov_tsv}
+echo -e "Genome\t${aid}.${sample_name}" > ${cov_tsv}
 tail -n +2 ${txt} | awk -F'\t' 'BEGIN {FS=OFS="\t"}; { if ($5 > 0) print $1,$2/$5*100 }' >> ${cov_tsv}
 
 # if counts is zero do not try to convert
