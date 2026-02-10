@@ -21,5 +21,6 @@ seqkit stats merge/dereplicated/*.fna | tail -n +2 | awk 'BEGIN{OFS="\t"} {print
 micov consolidate --paths ${PWD}/cov_files.txt --lengths ${lmap} --output ${PWD}/coverages.tgz
 
 biom_merge_pacbio --base {{output}}/remap --merge-type counts
+biom_merge_pacbio --base {{output}}/remap --merge-type coverage
 
 finish_qp_pacbio {{url}} {{qjid}} {{output}}

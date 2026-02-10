@@ -806,7 +806,7 @@ def feature_table_generation(qclient, job_id, parameters, out_dir):
             copy2,
         ),
         "checkm": (f"{out_dir}/merge/merged_checkm.txt", copy2),
-        "coverages": (f"{out_dir}/coverages.tgz", rename),
+        "coverage": (f"{out_dir}/remap/coverage.biom", rename),
         "length.map": (f"{out_dir}/length.map", rename),
     }
     optional_files = [
@@ -823,7 +823,7 @@ def feature_table_generation(qclient, job_id, parameters, out_dir):
         folder = join(out_dir, "finish", "files")
         makedirs(folder)
 
-        for element in ("tax", "checkm", "coverages", "length.map"):
+        for element in ("tax", "checkm", "length.map"):
             f, method = required_files[element]
             method(f, join(folder, basename(f)))
         for f, method in optional_files:
@@ -833,6 +833,7 @@ def feature_table_generation(qclient, job_id, parameters, out_dir):
         # [0] is the filepath
         treefp = required_files["tree"][0]
         biomfp = required_files["biom"][0]
+        covfp = required_files["coverage"][0]
 
         # filtering missing features from tree
         tips = [n.name.replace(" ", "_") for n in TreeNode.read(treefp).tips()]
@@ -855,7 +856,14 @@ def feature_table_generation(qclient, job_id, parameters, out_dir):
                     (treefp, "plain_text"),
                     (folder, "directory"),
                 ],
-            )
+            ),
+            ArtifactInfo(
+                "Coverage for Merged LCG/MAG",
+                "BIOM",
+                [
+                    (covfp, "biom"),
+                ],
+            ),
         ]
 
     return True, ainfo, "".join(errors)

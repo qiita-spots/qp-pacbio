@@ -37,14 +37,15 @@ awk 'BEGIN {FS=OFS="\t"}; {print $1,$NF}' ${txt} | \
     sed  's/ Read Count//' | sed "s/${fn}/${aid}.${sample_name}/" > ${tsv}
 
 # saving coverages
-cov_tsv=${txt/.txt/.cov}
-echo -e "mag_id\tcovered\tlength\tpercent_covered" > ${cov_tsv}
-tail -n +2 ${txt} | awk -F'\t' 'BEGIN {FS=OFS="\t"}; { if ($5 > 0) print $1,$2,$5,$2/$5 }' >> ${cov_tsv}
+cov_tsv=${txt/.txt/.cov.tsv}
+echo -e "mag_id\tpercent_covered" > ${cov_tsv}
+tail -n +2 ${txt} | awk -F'\t' 'BEGIN {FS=OFS="\t"}; { if ($5 > 0) print $1,$2/$5*100 }' >> ${cov_tsv}
 
 # if counts is zero do not try to convert
 counts=`tail -n +2 ${tsv} | awk '{sum += $NF} END {print sum}'`
 if [[ "$counts" != "0" ]]; then
     biom convert -i ${tsv} -o ${sn_folder}/counts.biom --to-hdf5
+    biom convert -i ${cov_tsv} -o ${sn_folder}/coverage.biom --to-hdf5
 fi
 
 touch ${out_folder}/completed_${SLURM_ARRAY_TASK_ID}.log

@@ -179,12 +179,12 @@ def _biom_merge(tables):
 @click.option("--base", type=click.Path(exists=True), required=True)
 @click.option(
     "--merge-type",
-    type=click.Choice(["syndna", "woltka", "counts"], case_sensitive=False),
+    type=click.Choice(["syndna", "woltka", "counts", "coverage"], case_sensitive=False),
 )
 def biom_merge(base, merge_type):
     """Merges all PacBio biom tables"""
     merge_type = merge_type.lower()
-    if merge_type in ("syndna", "counts"):
+    if merge_type in ("syndna", "counts", "coverage"):
         ranks = [merge_type]
     elif merge_type == "woltka":
         ranks = ["none", "per-gene", "ko", "ec", "pathway"]
