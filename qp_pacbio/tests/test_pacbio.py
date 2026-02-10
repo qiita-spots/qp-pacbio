@@ -780,7 +780,7 @@ class PacBioFeatureTableTests(PacBioTests):
             "    sed  's/ Read Count//' | sed \"s/${fn}/${aid}.${sample_name}/\" > ${tsv}\n",
             "\n",
             "cov_tsv=${txt/.txt/.cov.tsv}\n",
-            'echo -e "mag_id\\tpercent_covered" > ${cov_tsv}\n',
+            'echo -e "Genome\t${aid}.${sample_name}" > ${cov_tsv}\n',
             "tail -n +2 ${txt} | awk -F'\\t' 'BEGIN {FS=OFS=\"\\t\"}; { if ($5 > 0) print $1,$2/$5*100 }' >> ${cov_tsv}\n",
             "\n",
             "counts=`tail -n +2 ${tsv} | awk '{sum += $NF} END {print sum}'`\n",
