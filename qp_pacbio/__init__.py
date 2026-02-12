@@ -166,6 +166,7 @@ opt_params = {
 }
 outputs = {
     "Merged LCG/MAG feature table": "BIOM",
+    "Coverage for Merged LCG/MAG": "BIOM",
 }
 dflt_param_set = {
     "Default": {
