@@ -67,7 +67,7 @@ seqkit grep -v -f ${out_folder}/${sample_name}_plasmid_mapped.txt $filename > ${
 # seqkit grep -v -f reads_filtered.txt reads.fastq > reads_no_ecoli.fastq
 # ---- original commands ----
 minimap2 -x map-hifi -t {{nprocs}} -a --MD --eqx -o ${out_folder}/${sample_name}_GCF_000184185.sam ${db_folder}/GCF_000184185.1_ASM18418v1_genomic_chroso.fna ${out_folder}/${sample_name}_no_plasmid.fastq
-samtools view -bS -@ {{ nprocs/2 | int }} ${out_folder}/${sample_name}_no_plasmid.fastq | samtools sort -@ {{ nprocs/2 | int }} -O bam -o ${out_folder}/${sample_name}_GCF_000184185_sorted.bam
+samtools view -bS -@ {{ nprocs/2 | int }} ${out_folder}/${sample_name}_GCF_000184185.sam | samtools sort -@ {{ nprocs/2 | int }} -O bam -o ${out_folder}/${sample_name}_GCF_000184185_sorted.bam
 coverm filter --bam-files ${out_folder}/${sample_name}_GCF_000184185_sorted.bam --min-read-percent-identity 99.9 --min-read-aligned-percent 95 --threads {{nprocs}} -o ${out_folder}/${sample_name}_GCF_000184185.bam
 samtools view -O SAM -o ${out_folder}/${sample_name}_no_GCF_000184185_sorted.sam ${out_folder}/${sample_name}_GCF_000184185.bam
 awk '{print $1}' ${out_folder}/${sample_name}_no_GCF_000184185_sorted.sam > ${out_folder}/${sample_name}_GCF_000184185_reads_filtered.txt
