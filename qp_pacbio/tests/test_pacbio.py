@@ -385,7 +385,7 @@ class PacWoltkaSynDNATests(PacBioTests):
             "\n",
             "biom convert -i ${tsv} -o ${sn_folder}/syndna.biom --to-hdf5\n",
             "\n",
-            "minimap2 -x map-hifi -t 16 -a --MD --eqx -o ${out_folder}/${sample_name}_plasmid.sam ${db_folder}/AllsynDNA_plasmids_FASTA_ReIndexed_FINAL.fasta $filename\n",
+            "minimap2 -x map-hifi -t 16 -a --MD --eqx --secondary=no -o ${out_folder}/${sample_name}_plasmid.sam ${db_folder}/AllsynDNA_plasmids_FASTA_ReIndexed_FINAL.fasta $filename\n",
             "samtools view -F 4 -@ 16 ${out_folder}/${sample_name}_plasmid.sam | awk '{print $1}' | sort -u > ${out_folder}/${sample_name}_plasmid_mapped.txt\n",
             "seqkit grep -v -f ${out_folder}/${sample_name}_plasmid_mapped.txt $filename > ${out_folder}/${sample_name}_no_plasmid.fastq\n",
             "\n",
